@@ -36,8 +36,9 @@ module.exports.signIn = async (req, res) => {
     const auth = await bcrypt.compare(password, user.password); //comparrer le name avec le base bcrypt
     if (auth) {
       const token = createToken(user._id);
-      res.cookie("jwt", token, { httpOnly: true, maxAge });
-      res.status(200).json(user);
+      res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true });
+      const result = await UserModel.findOne({ email }).select('-password')
+      res.status(200).json(result);
     } else {
       res.status(400).send("Mot de passe incorrect");
       // throw Error("incorrect password");
@@ -54,7 +55,7 @@ module.exports.signInWithFacebook = async (req, res) => {
   try {
     const user = await UserModel.login(email, password);
     const token = createToken(user._id);
-    res.cookie("jwt", token, { httpOnly: true, maxAge });
+    res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true });
     res.json(user);
   } catch (err) {
     const errors = signInErrors(err);
@@ -63,7 +64,7 @@ module.exports.signInWithFacebook = async (req, res) => {
 };
 
 module.exports.logout = (req, res) => {
-  res.cookie("jwt", "", { maxAge: 1 });
+  res.clearCookie("jwt");
   // res.redirect("/"); //redirect
   res.status(200).send("cookie removed");
 };

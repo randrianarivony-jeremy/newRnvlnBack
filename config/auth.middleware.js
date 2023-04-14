@@ -25,13 +25,14 @@ module.exports.checkUser = (req, res, next) => {
 };
 
 module.exports.requireAuth = (req, res, next) => {
+  console.log(req.cookies.jwt);
   const token = req.cookies.jwt;
   if (token) {
     jwt.verify(token, process.env.TOKEN_SECRET, async (err, decodedToken) => {
       if (err) {
         console.log(err);
-        res.json('no token');
-        console.log('no token');
+        res.json('token incorrect');
+        console.log('token incorrect');
       } else {
         res.locals.id=decodedToken.id;
         console.log(res.locals.id);
