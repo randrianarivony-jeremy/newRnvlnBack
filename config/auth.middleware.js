@@ -3,7 +3,6 @@ const UserModel = require("../Models/user.model");
 
 module.exports.checkUser = (req, res, next) => {
   const token = req.cookies.jwt;
-  // console.log(process.env.TOKEN_SECRET);
   if (token) {
     jwt.verify(token, process.env.TOKEN_SECRET, async (err, decodedToken) => {
       if (err) {
@@ -14,7 +13,6 @@ module.exports.checkUser = (req, res, next) => {
       } else {
         let user = await UserModel.findById(decodedToken.id).select("-password");
         res.locals.user = user;
-        // console.log(user);
         next();
       }
     });
@@ -25,7 +23,6 @@ module.exports.checkUser = (req, res, next) => {
 };
 
 module.exports.requireAuth = (req, res, next) => {
-  console.log(req.cookies.jwt);
   const token = req.cookies.jwt;
   if (token) {
     jwt.verify(token, process.env.TOKEN_SECRET, async (err, decodedToken) => {
