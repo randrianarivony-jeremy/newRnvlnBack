@@ -9,9 +9,11 @@ const bodyParser = require("body-parser");
 const { checkUser, requireAuth } = require("./config/auth.middleware");
 const cookieParser = require("cookie-parser");
 const questionRoutes = require("./Routes/question.routes");
+const interviewRoutes = require("./Routes/interview.routes");
+const publicationRoutes = require("./Routes/publication.routes");
+const contentFeedRoutes = require("./Routes/contentFeed.routes");
 // const notifRoutes = require("./routes/notification.routes");
 // const chatRoutes = require("./routes/conversations");
-// const interviewRoutes = require("./routes/interview.routes");
 // const feedRoutes = require("./routes/feed.routes");
 // const messageRoutes = require("./routes/messages");
 // const suggestion = require ('./routes/suggestions');
@@ -42,11 +44,13 @@ app.get("/jwtid", requireAuth, (req, res) => {
 // //routes
 app.use("/api/user", userRoutes);
 app.use('/api/question',questionRoutes);
+app.use('/api/interview',interviewRoutes);
+app.use('/api/publication',publicationRoutes);
+app.use('/api/feeds',contentFeedRoutes);
 // app.use("/api/chat", chatRoutes);
 // app.use("/api/message", messageRoutes);
 // app.use("/api/notif", notifRoutes);
 // app.use('/api/input',suggestion);
-// app.use('/api/interview',interviewRoutes);
 // app.use('/api/feed',feedRoutes);
 
 
