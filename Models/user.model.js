@@ -25,11 +25,20 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxLength: 200,
     },
-    job: String,
-    address: String,
     project: {
       type: String,
       max: 200,
+      default:''
+    },
+    job: {
+      type: String,
+      max: 30,
+      default:''
+    },
+    address: {
+      type: String,
+      max: 30,
+      default:''
     },
     subscription: {
       type: Boolean,

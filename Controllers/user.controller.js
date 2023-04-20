@@ -10,20 +10,82 @@ module.exports.getAllUsers = async (req, res) => {
 
 // R E A D  O N E
 module.exports.userInfo = (req, res) => {
-  if (!ObjectId.isValid(req.params.id))
-    return res.status(400).send("Id unknown :" + req.params.id);
+  UserModel.findById(req.params.id)
+    .select(
+      "picture name philosophy followings followers subscriptions subscribers address project job"
+    )
+    .then(
+      (doc) => res.status(200).send(doc),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
+};
 
-  UserModel.findById(req.params.id, (err, docs) => {
-    if (!err) res.send(docs);
-    else console.log("Id unknown: " + err);
-  }).select("picture name philosophy sex status birth tag");
+// R E L A T I O N
+module.exports.follow = async (req, res) => {
+  if (req.body.follow) {
+    //follow
+    await UserModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: { followings: req.body.id_user },
+      },
+      { new: true }
+    ).then(
+      async () => {
+        await UserModel.findByIdAndUpdate(
+          req.body.id_user,
+          {
+            $push: { followers: req.params.id },
+          },
+          { new: true }
+        ).then(
+          () => res.status(200).send("follow success"),
+          (err) => {
+            console.log("push followers failed");
+            res.status(500).send("push followers failed: " + err);
+          }
+        );
+      },
+      (err) => {
+        console.log("set following failed");
+        res.status(500).send("push followings failed: " + err);
+      }
+    );
+  } else {
+    //unfollow
+    await UserModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $pull: { followings: req.body.id_user },
+      }
+    ).then(
+      async () => {
+        await UserModel.findByIdAndUpdate(
+          req.body.id_user,
+          {
+            $pull: { followers: req.params.id },
+          }
+        ).then(
+          () => res.status(200).send("unfollow success"),
+          (err) => {
+            console.log("pull followers failed");
+            res.status(500).send("pull followers failed: " + err);
+          }
+        );
+      },
+      (err) => {
+        console.log("pull following failed");
+        res.status(500).send("pull followings failed: " + err);
+      }
+    );
+  }
 };
 
 // U P D A T E
 module.exports.updateUser = (req, res) => {
-  if (!ObjectId.isValid(req.params.id))
-    return res.status(400).send("Id unknown :" + req.params.id);
-
   const updatedRecord = {
     name: req.body.name,
     password: req.body.password,
@@ -81,51 +143,78 @@ module.exports.deleteUser = (req, res) => {
   });
 };
 
-module.exports.uploadEdp = async (req, res) => {
+// U P D A T E
+module.exports.changeProfilePicture = async (req, res) => {
   try {
     const updatedRes = await UserModel.findByIdAndUpdate(
       req.params.id,
       {
-          picture: req.body.picture,
+        picture: req.body.picture,
       },
       { new: true }
-    );
-    // const updatedRes = await UserModel.findById(req.params.id)
-    // console.log({updatedRes})
+    ).select("picture");
     res.status(200).json(updatedRes);
   } catch (error) {
     console.log("Update error : " + error);
   }
 };
 
-module.exports.uploadPhilosophy = async (req, res) => {
-  UserModel.findByIdAndUpdate(
-    req.params.id,
-    {
-      $set: {
-        philosophy: req.body.philosophy,
+module.exports.changeAddress = async (req, res) => {
+  try {
+    const updatedRes = await UserModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        address: req.body.address,
       },
-    },
-    { new: true },
-    (err, docs) => {
-      if (!err) res.send(docs);
-      else console.log("Update error : " + err);
-    }
-  );
+      { new: true }
+    ).select("address");
+    res.status(200).json(updatedRes);
+  } catch (error) {
+    console.log("Update error : " + error);
+  }
 };
 
-module.exports.uploadTag = async (req, res) => {
-  UserModel.findByIdAndUpdate(
-    req.params.id,
-    {
-      $set: {
-        tag: req.body.tag,
+module.exports.changeJob = async (req, res) => {
+  try {
+    const updatedRes = await UserModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        job: req.body.job,
       },
-    },
-    { new: true },
-    (err, docs) => {
-      if (!err) res.send(docs);
-      else console.log("Update error : " + err);
-    }
-  );
+      { new: true }
+    ).select("job");
+    res.status(200).json(updatedRes);
+  } catch (error) {
+    console.log("Update error : " + error);
+  }
+};
+
+module.exports.changeProject = async (req, res) => {
+  try {
+    const updatedRes = await UserModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        project: req.body.project,
+      },
+      { new: true }
+    ).select("project");
+    res.status(200).json(updatedRes);
+  } catch (error) {
+    console.log("Update error : " + error);
+  }
+};
+
+module.exports.changePhilosophy = async (req, res) => {
+  try {
+    const updatedRes = await UserModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        philosophy: req.body.philosophy,
+      },
+      { new: true }
+    ).select("philosophy");
+    res.status(200).json(updatedRes);
+  } catch (error) {
+    console.log("Update error : " + error);
+  }
 };
