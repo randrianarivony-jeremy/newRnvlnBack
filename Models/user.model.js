@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    facebook_id: String,
     picture: {
       type: String,
     },
@@ -44,28 +43,32 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    fees: {
+      type: Number,
+      default: undefined,
+    },
     subscribers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        refPath: "user",
+        ref: "user",
       },
     ],
     subscriptions: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        refPath: "user",
+        ref: "user",
       },
     ],
     followings: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        refPath: "user",
+        ref: "user",
       },
     ],
     followers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        refPath: "user",
+        ref: "user",
       },
     ],
     wallet:{
@@ -88,26 +91,6 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-//before introduction into db
-userSchema.pre("save", async function (next) {
-  const salt = await bcrypt.genSalt();
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-//creer une fonction personnel de table
-userSchema.statics.login = async function (email, password) {
-  const user = await this.findOne({ email }); //crypter na aloha ny password et comparer apres
-  if (user) {
-    const auth = await bcrypt.compare(password, user.password); //comparrer le name avec le base bcrypt
-    if (auth) {
-      return user;
-    }
-    throw Error("incorrect password");
-  }
-  throw Error("incorrect email");
-};
 
 const UserModel = mongoose.model("user", userSchema); //user represente le nom de la collection à creer en respectant le model userShema
 module.exports = UserModel;

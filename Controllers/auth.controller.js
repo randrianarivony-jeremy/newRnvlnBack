@@ -11,12 +11,17 @@ const createToken = (id) => {
 };
 
 module.exports.signUp = async (req, res) => {
-  const { name,email, password, job,address, picture } = req.body;
+  const { name, email, job, address, picture } = req.body;
+  let { password } = req.body;
   try {
+    const salt = await bcrypt.genSalt(10);
+    password = await bcrypt.hash(password, salt);
     const user = await UserModel.create({
       name,
       email,
-      password,job,address,
+      password,
+      job,
+      address,
       picture,
     });
     const token = createToken(user._id);
@@ -36,15 +41,15 @@ module.exports.signIn = async (req, res) => {
     const auth = await bcrypt.compare(password, user.password); //comparrer le name avec le base bcrypt
     if (auth) {
       const token = createToken(user._id);
-      res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true });
-      const result = await UserModel.findOne({ email }).select('-password')
+      res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true });
+      const result = await UserModel.findOne({ email }).select("-password");
       res.status(200).json(result);
     } else {
       res.status(400).send("Mot de passe incorrect");
-      // throw Error("incorrect password");
+      console.log("Mot de passe incorrect");
     }
   } else {
-    console.log('email err');
+    console.log("email err");
     res.status(400).send("Email ou numero inconnu");
     // throw Error("incorrect email");
   }
@@ -55,7 +60,7 @@ module.exports.signInWithFacebook = async (req, res) => {
   try {
     const user = await UserModel.login(email, password);
     const token = createToken(user._id);
-    res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true });
+    res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true });
     res.json(user);
   } catch (err) {
     const errors = signInErrors(err);

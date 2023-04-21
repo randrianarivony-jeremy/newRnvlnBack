@@ -30,6 +30,8 @@ module.exports.requireAuth = (req, res, next) => {
         console.log(err);
         res.json('token incorrect');
         console.log('token incorrect');
+        res.locals.user=null
+        next();
       } else {
         res.locals.id=decodedToken.id;
         console.log(res.locals.id);
