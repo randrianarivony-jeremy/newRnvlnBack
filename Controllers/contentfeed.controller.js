@@ -9,7 +9,9 @@ module.exports.fetchContentFeed = async (req, res) => {
     const docs = await contentFeedModel
     .find()
     let result = [];
-    docs.map(async(elt)=>{
+    if (docs.length===0) res.status(200).send([]);
+    else {
+      docs.map(async(elt)=>{
         if (elt.docModel==='publication') {
           try {
             const doc = await publicationModel
@@ -21,8 +23,7 @@ module.exports.fetchContentFeed = async (req, res) => {
                 populate: { path: "commenterId", select: "name picture job" },
               })
               result.push({content:doc,type:'publication'});
-              // console.log(result.length,docs.length);
-
+              
               if (result.length === docs.length) res.status(200).json(result)
           } catch (error) {
             res.status(500).send(error.message);
@@ -49,6 +50,7 @@ module.exports.fetchContentFeed = async (req, res) => {
           }
         }
       })
+    }
   } catch (error) {
     res.status(500).send(error.message);
   }

@@ -2,14 +2,28 @@ const mongoose = require("mongoose");
 
 const ConversationSchema = new mongoose.Schema(
   {
-    members: [{
-      type: mongoose.Schema.Types.ObjectId, ref: 'user'
-    }],
-    messages: [{
-      type: mongoose.Schema.Types.ObjectId, ref: 'message'
-    }],
-    newUserA: {type:Number,default:0},
-    newUserB: {type:Number,default:0},
+    members: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+        required: true,
+      },
+    ],
+    messages: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "message",
+      },
+    ],
+    newMessage: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "user"
+        },
+        new: { type: Number, default: 0 },
+      },
+    ],
   },
   { timestamps: true }
 );
