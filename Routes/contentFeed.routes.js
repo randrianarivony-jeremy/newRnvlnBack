@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const contentFeedControler = require('../Controllers/contentFeed.controller')
+const contentFeedControler = require('../Controllers/contentfeed.controller')
 
 router.get('/load-more/:date', contentFeedControler.loadMore);
 router.get('/load-news/:date', contentFeedControler.loadNews);
