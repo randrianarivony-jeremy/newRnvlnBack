@@ -36,13 +36,7 @@ module.exports.readPublication = async (req, res) => {
 module.exports.readUserPublication = async (req, res) => {
   try {
     const result = await publicationModel
-      .findOne({id_user:req.params.id})
-      .populate("likers", "name picture job")
-      .populate("id_user", "name picture job")
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture job" },
-      });
+      .find({id_user:req.params.id}).select('id_user content contentType bg')
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);

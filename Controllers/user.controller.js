@@ -12,7 +12,7 @@ module.exports.getAllUsers = async (req, res) => {
 module.exports.userInfo = (req, res) => {
   UserModel.findById(req.params.id)
     .select(
-      "-password -wallet -saving -notificationSeen -messageNotSeen -createdAt -updatedAt -email"
+      "-password -wallet -savings -notificationSeen -messageNotSeen -createdAt -updatedAt -email"
     )
     .populate("followings", "picture name job")
     .populate("followers", "picture name job")

@@ -4,14 +4,14 @@ const UserModel = require("../Models/user.model");
 
 //add
 module.exports.createMessage = async (req, res) => {
-  let { sender, recipient, content, conversationId } = req.body;
+  let { sender, recipient, content,contentType, conversationId } = req.body;
 
   if (conversationId===null){
     //first message
     conversationModel.create({members:[sender,recipient]})
     .then(newConveration=>{
       conversationId = newConveration._id;
-      messageModel.create({ conversationId, sender, content }).then(
+      messageModel.create({ conversationId, sender, content,contentType }).then(
         async (savedMessage) => {
           await conversationModel
             .updateOne({ _id: conversationId },{
@@ -21,7 +21,7 @@ module.exports.createMessage = async (req, res) => {
             .then(async () => {
                 await UserModel.updateOne({ _id: recipient },
                   {$inc: { messageNotSeen: 1 },})
-                  .then(() => res.status(201).send("message successfully saved"),
+                  .then(() => res.status(201).json(savedMessage),
                   (err) => {
                     console.log("incrementation messagenotseen failed for user" +recipient +"---" +err);
                     res.status(500).send("incrementation messagenotseen failed");
@@ -35,14 +35,14 @@ module.exports.createMessage = async (req, res) => {
             );
         },
         (err) => {
-          console.log("message saving failed " + conversationId + "---" + err);
-          res.status(500).send("message saving failed");
+          console.log("message savings failed " + conversationId + "---" + err);
+          res.status(500).send("message savings failed");
         }
       );
     })
   }
   else {
-    await messageModel.create({ conversationId, sender, content }).then(
+    await messageModel.create({ conversationId, sender, content,contentType }).then(
     async (savedMessage) => {
       await conversationModel.findOne({_id:conversationId})
         .then(conversation=>{
@@ -54,7 +54,7 @@ module.exports.createMessage = async (req, res) => {
           .then(async () => {
             await UserModel.updateOne({ _id: recipient },
               {$inc: { messageNotSeen: 1 },})
-              .then(() => res.status(201).send("message successfully saved"),
+              .then(() => res.status(201).json(savedMessage),
               (err) => {
                 console.log("incrementation messagenotseen failed for user" +recipient +"---" +err);
                 res.status(500).send("incrementation messagenotseen failed");
@@ -72,8 +72,8 @@ module.exports.createMessage = async (req, res) => {
         })
     },
     (err) => {
-      console.log("message saving failed " + conversationId + "---" + err);
-      res.status(500).send("message saving failed");
+      console.log("message savings failed " + conversationId + "---" + err);
+      res.status(500).send("message savings failed");
     }
   );}
 };
@@ -82,15 +82,34 @@ module.exports.createMessage = async (req, res) => {
 
 module.exports.fetchMessages = async (req, res) => {
   try {
-    const messages = await messageModel.findById(
+    const messages = await conversationModel.findById(
       req.params.conversationId)
       .populate("members", "name picture job")
       .populate("messages")
       .sort({ createdAt: -1 })
-      .limit(20);
+      .limit(10);
     res.status(200).json(messages);
   } catch (err) {
-    console.log("message fetching failed" + req.params.conversationId + "---" + err);
+    if (err.message===`Cast to ObjectId failed for value "${req.params.conversationId}" (type string) at path "_id" for model "conversation"`)
+    res.status(200).send('new conversation')
+    else {
+      console.log("message fetching failed" + req.params.conversationId + "---" + err.message);
       res.status(500).send("message fetching failed");
+    }
   }
 };
+
+module.exports.deleteMessage=async(req,res)=>{
+  await messageModel.findByIdAndDelete(req.params.id)
+  .then(async(doc)=>{
+    await conversationModel.findByIdAndUpdate(req.params.conversationId,{
+      $pull: {messages: req.params.id}
+    }).then(()=>res.status(200).send(doc._id),err=>{
+      console.log("conversation message pulling failed" + req.params.id + "---" + err);
+      res.status(500).send("message deleting failed upon conversation model");
+    })
+  },err=>{
+    console.log("message deleting failed" + req.params.id + "---" + err);
+      res.status(500).send("message deleting failed");
+  })
+}

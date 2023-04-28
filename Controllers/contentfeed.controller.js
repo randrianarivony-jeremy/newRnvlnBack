@@ -65,7 +65,7 @@ module.exports.loadNews = async (req, res) => {
       .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
       .populate("project", "name picture tag")
-      .populate("saving", "name picture tag")
+      .populate("savings", "name picture tag")
       .populate("meToo", "name picture tag")
       .populate({
         path: "comments",
@@ -87,7 +87,7 @@ module.exports.loadMore = async (req, res) => {
       .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
       .populate("project", "name picture tag")
-      .populate("saving", "name picture tag")
+      .populate("savings", "name picture tag")
       .populate("meToo", "name picture tag")
       .populate({
         path: "comments",
@@ -98,3 +98,7 @@ module.exports.loadMore = async (req, res) => {
     res.send(error.message);
   }
 };
+
+module.exports.fetchUserPosts=async(req,res)=>{
+  await contentFeedModel.find()
+}

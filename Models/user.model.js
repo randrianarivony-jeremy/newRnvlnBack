@@ -71,12 +71,15 @@ const userSchema = new mongoose.Schema(
         ref: "user",
       },
     ],
+    savings: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "contentfeed",
+      },
+    ],
     wallet:{
       type:Number,
       default:0
-    },
-    saving: {
-      type: [String],
     },
     notificationSeen: {
       type: Number,

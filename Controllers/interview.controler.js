@@ -59,13 +59,7 @@ module.exports.readInterview = async (req, res) => {
 module.exports.readUserInterview = async (req, res) => {
   try {
     const result = await interviewModel
-      .findOne({ id_user: req.params.id })
-      .populate("likers", "name picture job")
-      .populate("id_user", "name picture job")
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture job" },
-      });
+      .find({ id_user: req.params.id }).select('id_user content contentType bg')
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -105,7 +99,7 @@ module.exports.loadNews = async (req, res) => {
       .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
       .populate("project", "name picture tag")
-      .populate("saving", "name picture tag")
+      .populate("savings", "name picture tag")
       .populate("meToo", "name picture tag")
       .populate({
         path: "comments",
@@ -127,7 +121,7 @@ module.exports.loadMore = async (req, res) => {
       .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
       .populate("project", "name picture tag")
-      .populate("saving", "name picture tag")
+      .populate("savings", "name picture tag")
       .populate("meToo", "name picture tag")
       .populate({
         path: "comments",
@@ -260,13 +254,13 @@ module.exports.savePost = async (req, res) => {
       save = await interviewModel.findByIdAndUpdate(
         req.params.id,
         {
-          $push: { saving: req.body.id_user },
+          $push: { savings: req.body.id_user },
         },
         { new: true }
       );
     } else {
       save = await interviewModel.findByIdAndUpdate(req.params.id, {
-        $pull: { saving: req.body.id_user },
+        $pull: { savings: req.body.id_user },
       });
     }
 
