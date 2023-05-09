@@ -1,5 +1,6 @@
 const Comments = require("../Models/comments.model");
 const contentFeedModel = require("../Models/contentFeed.model");
+const notificationModel = require("../Models/notification.model");
 const publicationModel = require("../Models/publication.model");
 
 //CREATE
@@ -106,62 +107,199 @@ module.exports.updatePublication = async (req, res) => {};
 module.exports.deletePublication = async (req, res) => {};
 
 // L I K E
-module.exports.likeOrNotPost = async (req, res) => {
-  try {
-    var result;
-    if (req.body.like) {
-      result = await publicationModel.findByIdAndUpdate(
+module.exports.likeOrNotPublication = async (req, res) => {
+  if (req.body.like) {
+    await publicationModel.findByIdAndUpdate(
         req.params.id,
-        {
-          $push: { likers: req.body.id_user },
+        {$push: { likers: req.body.id_user },},
+        { new: true, select: "id_user likeNotification" }
+      )
+      .then(async (publication) => {
+          // notification
+          if (publication.id_user == req.body.id_user) {  //liking own post
+            res.status(200).send("liking post success");
+          } else {
+            if (publication.likeNotification === null) {  //first like
+              notificationModel.create({
+                  action: "like",
+                  to: publication.id_user,
+                  from: req.body.id_user,
+                  on: publication._id,
+                  docModel:'publication'
+                })
+                .then((newNotification) => {
+                  publication.likeNotification = newNotification._id;
+                  publication.save().then(
+                    () => res.status(200).send("liking post success"),
+                    (err) => {
+                      console.log("publication updating likenotification failed for liking publication " +req.params.id +"---" +err);
+                      res.status(500).send("liking failed");
+                    }
+                  );
+                },err=>{
+                  console.log("creating notification failed for liking publication " +req.params.id +"---" +err);
+                      res.status(500).send("liking failed");
+                });
+            } else {
+              notificationModel
+                .findByIdAndUpdate(publication.likeNotification, {
+                  $set: { from: req.body.id_user },
+                })
+                .then(
+                  () => res.status(200).send("liking post success"),
+                  (err) => {
+                    console.log("notification updating failed for liking publication " +req.params.id +"---" +err);
+                    res.status(500).send("liking failed");
+                  }
+                );
+            }
+          }
         },
-        { new: true,select:'likers' }
+        (err) => {
+          console.log("publication updating failed for liking publication " +req.params.id +"---" +err);
+          res.status(500).send("liking failed");
+        }
       );
-    } else {
-      result = await publicationModel.findByIdAndUpdate(
-        req.params.id,
+  } else {
+    publicationModel.findByIdAndUpdate(
+      req.params.id,
         {
           $pull: { likers: req.body.id_user },
         },
-        { new: true,select:'likers' }
+        { new: true,select:'likers likeNotification' }
+      )
+      .then((publication) => {
+          if (publication.likers.length === 0) {
+            notificationModel.findByIdAndDelete(publication.likeNotification)
+              .then(
+                () => {
+                  publication.likeNotification = null;
+                  publication.save().then(
+                    () => res.status(200).send("unliking publication done"),
+                    (err) => {
+                      console.log("setting likenotification to null failed for unliking publication " +req.params.id +"---" +err);
+                      res.status(500).send("unliking failed");
+                    }
+                  );
+                },
+                (err) => {
+                  console.log("deleting notification failed for unliking publication " +req.params.id +"---" +err);
+                  res.status(500).send("unliking failed");
+                }
+              );
+          } else res.status(200).send("unliking publication done");
+        },
+        (err) => {
+          console.log("publication updating failed for unliking publication " +req.params.id +"---" +err);
+          res.status(500).send("unliking failed");
+        }
       );
-    }
-    res.status(200).json(result);
-  } catch (err) {
-    console.log(err);
-    return res.status(400);
   }
 };
 
-// C O M M E N T  P O S T
-module.exports.commentpost = async (req, res) => {
-  try {
-    const comment = await publicationModel.findByIdAndUpdate(req.params.id, {
-      $push: { comments: {commenterId:req.body.commenterId,text:req.body.text} },
-    },{new:true,select:'comments'}).populate({
+//C O M M E N T
+module.exports.commentPublication = async (req, res) => {
+  await publicationModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          comments: {
+            commenterId: req.body.commenterId,
+            text: req.body.text,
+          },
+        },
+      },
+      { new: true,select:'comments id_user commentNotification' }
+    )
+    .populate({
       path: "comments",
-      populate: { path: "commenterId", select: "name picture tag" },
-    });
-    res.status(200).json(comment);
-  } catch (error) {
-    console.log(error);
-    res.status(201).send(error);
-  }
+      populate: { path: "commenterId", select: "name picture job" },
+    })
+    .then(async (publication) => {
+        // notification
+        if (publication.id_user == req.body.commenterId) {  //commenting own post
+          res.status(200).json(publication.comments);
+        } else {
+          if (publication.commentNotification === null) {  //first comment
+            notificationModel.create({
+                action: "comment",
+                to: publication.id_user,
+                from: req.body.commenterId,
+                on: publication._id,
+                docModel:'publication'
+              })
+              .then((newNotification) => {
+                publication.commentNotification = newNotification._id;
+                publication.save().then(
+                  () => res.status(200).json(publication.comments),
+                  (err) => {
+                    console.log("publication updating commentnotification failed for liking publication " +req.params.id +"---" +err);
+                    res.status(500).send("comment failed");
+                  }
+                );
+              },err=>{
+                console.log("creating notification failed for commenting publication " +req.params.id +"---" +err);
+                    res.status(500).send("comment failed");
+              });
+          } else {
+            notificationModel
+              .findByIdAndUpdate(publication.commentNotification, {
+                $set: { from: req.body.commenterId },
+              })
+              .then(
+                () => res.status(200).json(publication.comments),
+                (err) => {
+                  console.log("notification updating failed for commenting publication " +req.params.id +"---" +err);
+                  res.status(500).send("comment failed");
+                }
+              );
+          }
+        }
+      },
+      (err) => {
+        console.log("pushing comment failed for commenting publication " +req.params.id +"---" +err);
+        res.status(500).send("comment failed");
+      }
+    );
+
 };
 
-module.exports.deleteCommentpost = async (req, res) => {
-  await publicationModel.findOneAndUpdate(
-    { _id: req.params.id },
+// D E L E T E  C O M M E N T 
+module.exports.deleteCommentPublication = async (req, res) => {
+publicationModel.findByIdAndUpdate(
+  req.params.id,
     {
       $pull: { comments: { _id: req.params.commentId } },
-    },{ new: true, select: "comments" }
+    },
+    { new: true,select:'comments commentNotification' }
   ).populate({
     path: "comments",
-    populate: { path: "commenterId", select: "name picture tag" },
+    populate: { path: "commenterId", select: "name picture job" },
   })
-  .then((doc) => res.status(200).json(doc))
-  .catch((err) => {
-    res.status(500).send(err);
-    console.log(err);
-  });
+  .then((publication) => {
+      if (publication.comments.length === 0) {
+        notificationModel.findByIdAndDelete(publication.commentNotification)
+          .then(
+            () => {
+              publication.commentNotification = null;
+              publication.save().then(
+                () => res.status(200).json(publication.comments),
+                (err) => {
+                  console.log("setting commentnotification to null failed for deleting comment publication " +req.params.id +"---" +err);
+                  res.status(500).send("deleting comment failed");
+                }
+              );
+            },
+            (err) => {
+              console.log("deleting notification failed for deletecomment publication " +req.params.id +"---" +err);
+              res.status(500).send("deleting comment failed");
+            }
+          );
+      } else res.status(200).json(publication.comments);
+    },
+    (err) => {
+      console.log("publication updating failed for deleting comment publication " +req.params.id +"---" +err);
+      res.status(500).send("deleting comment failed");
+    }
+  )
 };

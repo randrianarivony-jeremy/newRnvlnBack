@@ -23,7 +23,21 @@ const interviewSchema = new mongoose.Schema(
         ref: "user",
       },
     ],
+    likeNotification: 
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "notification",
+        default:null
+      }
+    ,
     comments: [CommentSchema],
+    commentNotification: 
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "notification",
+        default:null
+      }
+    ,
   },
   {
     timestamps: true,

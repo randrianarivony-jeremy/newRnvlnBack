@@ -14,7 +14,7 @@ const publicationRoutes = require("./Routes/publication.routes");
 const contentFeedRoutes = require("./Routes/contentFeed.routes");
 const messageRoutes = require("./Routes/message.routes");
 const conversationRoutes = require("./Routes/conversation.routes");
-// const notifRoutes = require("./routes/notification.routes");
+const notifRoutes = require("./routes/notification.routes");
 // const chatRoutes = require("./routes/conversations");
 // const feedRoutes = require("./routes/feed.routes");
 // const suggestion = require ('./routes/suggestions');
@@ -50,8 +50,8 @@ app.use('/api/publication',publicationRoutes);
 app.use('/api/feeds',contentFeedRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/conversation", conversationRoutes);
+app.use("/api/notification", notifRoutes);
 // app.use("/api/chat", chatRoutes);
-// app.use("/api/notif", notifRoutes);
 // app.use('/api/input',suggestion);
 // app.use('/api/feed',feedRoutes);
 

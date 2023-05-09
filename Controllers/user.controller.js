@@ -1,6 +1,7 @@
 const UserModel = require("../Models/user.model");
 const ObjectId = require("mongoose").Types.ObjectId;
 const bcrypt = require("bcrypt");
+const notificationModel = require("../Models/notification.model");
 
 // R E A D  A L L
 module.exports.getAllUsers = async (req, res) => {
@@ -14,10 +15,6 @@ module.exports.userInfo = (req, res) => {
     .select(
       "-password -wallet -savings -notificationSeen -messageNotSeen -createdAt -updatedAt -email"
     )
-    .populate("followings", "picture name job")
-    .populate("followers", "picture name job")
-    .populate("subscribers", "picture name job")
-    .populate("subscriptions", "picture name job")
     .then(
       (doc) => res.status(200).send(doc),
       (err) => {
@@ -27,14 +24,11 @@ module.exports.userInfo = (req, res) => {
     );
 };
 
+
 // R E A D  C U R R E N T  U S E R
 module.exports.currentUser = (req, res) => {
   UserModel.findById(req.params.id)
     .select("-password -createdAt -updatedAt")
-    .populate("followings", "picture name job")
-    .populate("followers", "picture name job")
-    .populate("subscribers", "picture name job")
-    .populate("subscriptions", "picture name job")
     .then(
       (doc) => res.status(200).send(doc),
       (err) => {
@@ -46,6 +40,9 @@ module.exports.currentUser = (req, res) => {
 
 // R E L A T I O N
 module.exports.follow = async (req, res) => {
+  if (req.body.id_user == req.params.id) {  //auto following
+    res.status(400).send({err:'cannot self follow'});
+  } else {
   if (req.body.follow) {
     //follow
     await UserModel.findByIdAndUpdate(
@@ -63,12 +60,46 @@ module.exports.follow = async (req, res) => {
           },
           { new: true }
         ).then(
-          () => res.status(200).send("follow success"),
-          (err) => {
+          (followed) => {
+            //notification tricks
+              if (followed.followNotification === null) {  //first follower
+                notificationModel.create({
+                    action: "follow",
+                    to: followed._id,
+                    from: req.params.id,
+                  })
+                  .then((newNotification) => {
+                    followed.followNotification = newNotification._id;
+                    followed.save().then(
+                      () => res.status(200).send("follow success"),
+                      (err) => {
+                        console.log("followed user updating follownotification failed for follower user " +req.params.id +"---" +err);
+                        res.status(500).send("following failed");
+                      }
+                    );
+                  },err=>{
+                    console.log("creating notification failed for follower user " +req.params.id +"---" +err);
+                        res.status(500).send("following failed");
+                  });
+              } else {
+                notificationModel
+                  .findByIdAndUpdate(followed.followNotification, {
+                    $set: { from: req.params.id },
+                  })
+                  .then(
+                    () => res.status(200).send("follow success"),
+                    (err) => {
+                      console.log("notification updating failed for follower user " +req.params.id +"---" +err);
+                      res.status(500).send("follow failed");
+                    }
+                  );
+              }
+            },
+            (err) => {
             console.log("push followers failed");
             res.status(500).send("push followers failed: " + err);
           }
-        );
+          );
       },
       (err) => {
         console.log("set following failed");
@@ -83,8 +114,28 @@ module.exports.follow = async (req, res) => {
       async () => {
         await UserModel.findByIdAndUpdate(req.body.id_user, {
           $pull: { followers: req.params.id },
-        }).then(
-          () => res.status(200).send("unfollow success"),
+        },{new : true , select : 'followers followNotification'}).then(
+          (followed) => {
+            if (followed.followers.length === 0) {
+              notificationModel.findByIdAndDelete(followed.followNotification)
+                .then(
+                  () => {
+                    followed.followNotification = null;
+                    followed.save().then(
+                      () => res.status(200).send("unfollow done"),
+                      (err) => {
+                        console.log("setting follownotification to null failed for unfollower user " +req.params.id +"---" +err);
+                        res.status(500).send("unfollow action failed");
+                      }
+                    );
+                  },
+                  (err) => {
+                    console.log("deleting notification failed for unfollower user " +req.params.id +"---" +err);
+                    res.status(500).send("unfollow action failed");
+                  }
+                );
+            } else res.status(200).send("unfollow done");
+          },
           (err) => {
             console.log("pull followers failed");
             res.status(500).send("pull followers failed: " + err);
@@ -95,7 +146,8 @@ module.exports.follow = async (req, res) => {
         console.log("pull following failed");
         res.status(500).send("pull followings failed: " + err);
       }
-    );
+      );
+    }
   }
 };
 
@@ -128,44 +180,67 @@ module.exports.enableSubscription = async (req, res) => {
 };
 
 module.exports.subscribe = async (req, res) => {
-  let follower = await UserModel.findById(req.params.id);
-  const auth = await bcrypt.compare(req.body.password, follower.password); //comparrer le name avec le base bcrypt
+  let subscriber = await UserModel.findById(req.params.id,'password subscriptions wallet');
+  const auth = await bcrypt.compare(req.body.password, subscriber.password); //comparrer le name avec le base bcrypt
   if (auth) {
-    await UserModel.findById(req.body.id_user).then(
-      async (following) => {
-        if (follower.wallet < following.fees)
+    await UserModel.findById(req.body.id_user,'fees subscriptionNotification wallet subscribers').then(
+      async (subscribed) => {
+        if (subscriber.wallet < subscribed.fees)
           res.status(400).send("insufficient");
         else {
-          follower.wallet -= following.fees;
-          follower.subscriptions.push(following._id);
-          await follower.save().then(
-            async () => {
-              following.wallet += following.fees;
-              following.subscribers.push(follower._id);
-              await following.save().then(
-                () => res.status(200).send("subscription success"),
-                (err) => {
-                  console.log(
-                    "Subscribe : following wallet logic failed" + err
-                  );
-                  res
-                    .status(500)
-                    .send("error in wallet logic for following (you)");
+          subscriber.wallet -= subscribed.fees;
+          subscriber.subscriptions.push(subscribed._id);
+          await subscriber.save().then(
+             () => {
+              subscribed.wallet += subscribed.fees;
+              subscribed.subscribers.push(subscriber._id);
+
+              //notification tricks
+                if (subscribed.subscriptionNotification === null) {  //first subscriber
+                  notificationModel.create({
+                      action: "subscribe",
+                      to: subscribed._id,
+                      from: req.params.id,
+                    })
+                    .then((newNotification) => {
+                      subscribed.subscriptionNotification = newNotification._id;
+                      subscribed.save().then(
+                        () => res.status(200).send("subscription success"),
+                        (err) => {
+                          console.log("subscribed user updating subscriptionnotification failed for subscriber user " +req.params.id +"---" +err);
+                          res.status(500).send("subscribing failed");
+                        }
+                      );
+                    },err=>{
+                      console.log("creating notification failed for subscriber user " +req.params.id +"---" +err);
+                          res.status(500).send("subscribing failed");
+                    });
+                } else {
+                  notificationModel
+                    .findByIdAndUpdate(subscribed.subscriptionNotification, {
+                      $set: { from: req.params.id },
+                    })
+                    .then(
+                      () => res.status(200).send("subscribing success"),
+                      (err) => {
+                        console.log("notification updating failed for subscriber user " +req.params.id +"---" +err);
+                        res.status(500).send("subscription failed");
+                      }
+                    );
                 }
-              );
             },
             (err) => {
-              console.log("Subscribe : follower wallet logic failed" + err);
-              res.status(500).send("error in wallet logic for follower");
+              console.log("Subscribe : subscriber wallet logic failed" + err);
+              res.status(500).send("error in wallet logic for subscriber");
             }
           );
         }
       },
       (err) => {
         console.log(
-          "Subscribe : following not found: id" + req.body.id_user + "---" + err
+          "Subscribe : subscribed user not found: id" + req.body.id_user + "---" + err
         );
-        res.status(500).send("following not found");
+        res.status(500).send("subscription user not found");
       }
     );
   } else {
@@ -174,8 +249,8 @@ module.exports.subscribe = async (req, res) => {
 };
 
 module.exports.unsubscribe = async (req, res) => {
-  await UserModel.findById(req.params.id).then(async (follower) => {
-    const auth = await bcrypt.compare(req.body.password, follower.password);
+  await UserModel.findById(req.params.id,'password').then(async (unsubscriber) => {
+    const auth = await bcrypt.compare(req.body.password, unsubscriber.password);
     if (auth) {
       await UserModel.findByIdAndUpdate(req.params.id, {
         $pull: { subscriptions: req.body.id_user },
@@ -183,8 +258,28 @@ module.exports.unsubscribe = async (req, res) => {
         async () =>
           await UserModel.findByIdAndUpdate(req.body.id_user, {
             $pull: { subscribers: req.params.id },
-          }).then(
-            () => res.status(200).send("unsubscribe done"),
+          },{new:true,select:'subscriptionNotification subscribers'}).then(
+            (subscribed) => {
+            if (subscribed.subscribers.length === 0) {
+              notificationModel.findByIdAndDelete(subscribed.subscriptionNotification)
+                .then(
+                  () => {
+                    subscribed.subscriptionNotification = null;
+                    subscribed.save().then(
+                      () => res.status(200).send("unsubscribe done"),
+                      (err) => {
+                        console.log("setting subscriptionnotification to null failed for unsubscriber user " +req.params.id +"---" +err);
+                        res.status(500).send("unsubscription action failed");
+                      }
+                    );
+                  },
+                  (err) => {
+                    console.log("deleting notification failed for unsubscriber user " +req.params.id +"---" +err);
+                    res.status(500).send("unsubscription action failed");
+                  }
+                );
+            } else res.status(200).send("unsubscription action done");
+          },
             (err) => {
               console.log("Unsubscribe : pull subscriber failed" + err);
               res.status(500).send("pull subscriber failed");
@@ -192,18 +287,78 @@ module.exports.unsubscribe = async (req, res) => {
           ),
         (err) => {
           console.log(
-            "Subscribe : following not found: id" +
+            "Subscribe : subscription user not found: id" +
               req.body.id_user +
               "---" +
               err
           );
-          res.status(500).send("following not found");
+          res.status(500).send("subscription user not found");
         }
       );
     } else {
       res.status(400).send("Mot de passe incorrect");
     }
   });
+};
+
+module.exports.fetchFollowers = (req, res) => {
+  UserModel.findById(req.params.id)
+    .select(
+      "followers"
+    )
+    .populate("followers", "picture name job")
+    .then(
+      (doc) => res.status(200).send(doc.followers),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
+};
+
+module.exports.fetchFollowings = (req, res) => {
+  UserModel.findById(req.params.id)
+    .select(
+      "followings"
+    )
+    .populate("followings", "picture name job")
+    .then(
+      (doc) => res.status(200).send(doc.followings),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
+};
+
+module.exports.fetchSubscribers = (req, res) => {
+  UserModel.findById(req.params.id)
+    .select(
+      "subscribers"
+    )
+    .populate("subscribers", "picture name job")
+    .then(
+      (doc) => res.status(200).send(doc.subscribers),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
+};
+
+module.exports.fetchSubscriptions = (req, res) => {
+  UserModel.findById(req.params.id)
+    .select(
+      "subscriptions"
+    )
+    .populate("subscriptions", "picture name job")
+    .then(
+      (doc) => res.status(200).send(doc.subscriptions),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
 };
 
 // U P D A T E

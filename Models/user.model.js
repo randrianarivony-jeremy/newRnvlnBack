@@ -47,6 +47,12 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: undefined,
     },
+    subscriptionNotification: 
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "notification",
+        default:null
+      },
     subscribers: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -59,6 +65,12 @@ const userSchema = new mongoose.Schema(
         ref: "user",
       },
     ],
+    followNotification: 
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "notification",
+        default:null
+      },
     followings: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -12,9 +12,8 @@ router.get('/load-news/:date', interviewControler.loadNews);
 router.get('/', interviewControler.readAllInterviews);
 
 //REACTION
-router.patch('/like/:id', interviewControler.likeOrNotPost);
-router.patch('/comment/:id', interviewControler.commentpost);
-
+router.patch('/like/:id', interviewControler.likeOrNotInterview);
+router.patch('/comment/:id', interviewControler.commentInterview);
 
 //UPDATE
 router.put('/:id', interviewControler.updateInterview);

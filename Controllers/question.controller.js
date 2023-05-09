@@ -38,7 +38,7 @@ module.exports.readAllQuestions = async(req,res)=>{
 //READ ALL
 module.exports.readUserQuestions = async(req,res)=>{
     try {
-        const result = await questionModel.findOne({interviewer:req.params.id})
+        const result = await questionModel.find({interviewer:req.params.id})
         .populate('interviewer','name picture')
         .sort({ createdAt: -1 });
         res.status(200).json(result);

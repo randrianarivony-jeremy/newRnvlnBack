@@ -11,7 +11,11 @@ const questionSchema = new mongoose.Schema(
       required: true,
     },
     bg: { type: String, required: true },
-    interviewees: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+    interviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "interview" }],
+    interviewNotification:{
+      type:mongoose.Schema.Types.ObjectId, ref: "notification",
+      default:null
+    }
   },
   {
     timestamps: true,

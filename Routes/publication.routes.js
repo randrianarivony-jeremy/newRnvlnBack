@@ -15,10 +15,10 @@ router.put('/:id', publicationControler.updatePublication);
 
 // DELETE
 router.delete('/:id', publicationControler.deletePublication);
-router.delete('/:id/:commentId', publicationControler.deleteCommentpost);
+router.delete('/:id/:commentId', publicationControler.deleteCommentPublication);
 
 // REACTION 
-router.patch('/like/:id', publicationControler.likeOrNotPost);
-router.patch('/comment/:id', publicationControler.commentpost);
+router.patch('/like/:id', publicationControler.likeOrNotPublication);
+router.patch('/comment/:id', publicationControler.commentPublication);
 
 module.exports = router;
