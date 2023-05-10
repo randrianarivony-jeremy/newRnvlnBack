@@ -11,6 +11,7 @@ const interviewSchema = new mongoose.Schema(
     content: { type: String, required: true },
     contentType: { type: String, required: true },
     bg: { type: String, default: "" },
+    subscribers_only: {type:Boolean,default:false},
     description: { type: String, default: "" },
     question: {
       type: mongoose.Schema.Types.ObjectId,

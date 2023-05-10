@@ -18,10 +18,6 @@ module.exports.fetchContentFeed = async (req, res) => {
               .findById(elt.id_content)
               // .populate("likers", "name picture job")
               .populate("id_user", "name picture job")
-              .populate({
-                path: "comments",
-                populate: { path: "commenterId", select: "name picture job" },
-              })
               result.push({content:doc,type:'publication'});
               
               if (result.length === docs.length) res.status(200).json(result)
@@ -34,10 +30,6 @@ module.exports.fetchContentFeed = async (req, res) => {
               .findById(elt.id_content)
               // .populate("likers", "name picture job")
               .populate("id_user", "name picture job")
-              .populate({
-                path: "comments",
-                populate: { path: "commenterId", select: "name picture job" },
-              })
               .populate({
                 path: "question",
                 populate: { path: "interviewer", select: "name picture job" },

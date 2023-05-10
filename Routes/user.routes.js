@@ -13,13 +13,13 @@ router.get('/:id', userController.currentUser);
 router.delete('/:id', userController.deleteUser);
 
 //Relation
-router.get("/followers/:id", userController.fetchFollowers);
-router.get("/followings/:id", userController.fetchFollowings);
+router.get("/friends/:id", userController.fetchFriends);
+// router.get("/followings/:id", userController.fetchFollowings);
 router.get("/subscribers/:id", userController.fetchSubscribers);
 router.get("/subscriptions/:id", userController.fetchSubscriptions);
 router.patch('/subscribe/:id', userController.subscribe);
 router.patch('/unsubscribe/:id', userController.unsubscribe);
-router.patch('/follow/:id', userController.follow);
+router.patch('/friend_invitation/:id', userController.inviteToBeFriends);
 
 //Updating
 router.put('/username/:id', userController.updateUsername);

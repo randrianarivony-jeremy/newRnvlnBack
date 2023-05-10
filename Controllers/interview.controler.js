@@ -5,7 +5,7 @@ const notificationModel = require("../Models/notification.model");
 
 //CREATE
 module.exports.createInterview = async (req, res) => {
-  const { content, contentType, id_user, question, bg, description } = req.body;
+  const { content, contentType, id_user, question, bg, description,subscribers_only } = req.body;
   try {
     const interview = await interviewModel.create({
       content,
@@ -13,7 +13,7 @@ module.exports.createInterview = async (req, res) => {
       question,
       description,
       bg,
-      contentType,
+      contentType,subscribers_only
     });
     const questionDoc = await questionModel.findByIdAndUpdate(
       question,
@@ -62,7 +62,6 @@ module.exports.readInterview = async (req, res) => {
   try {
     const result = await interviewModel
       .findById(req.params.id)
-      .populate("likers", "name picture job")
       .populate("id_user", "name picture job")
       // .populate("question",'data bg')
       .populate({
@@ -254,6 +253,21 @@ module.exports.likeOrNotInterview = async (req, res) => {
       );
   }
 };
+
+//F E T C H  C O M M E N T S
+module.exports.fetchComments=async(req,res)=>{
+  // console.log(res.locals.user)
+  await interviewModel.findById(req.params.id,'comments')
+  .populate({
+    path: "comments",
+    populate: { path: "commenterId", select: "name picture job" },
+  })
+  .then(doc=>res.status(200).json(doc.comments))
+  .catch(err=>{
+    console.log('Fetching comments failed for interview '+req.params.id+' --- '+err);
+    res.status(500).send(err.message)
+  })
+}
 
 //C O M M E N T
 module.exports.commentInterview = async (req, res) => {

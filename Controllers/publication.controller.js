@@ -5,9 +5,9 @@ const publicationModel = require("../Models/publication.model");
 
 //CREATE
 module.exports.createPublication = async (req, res) => {
-  const { content,contentType, id_user, bg, description } = req.body;
+  const { content,contentType, id_user, bg, description,subscribers_only } = req.body;
   try {
-    const result = await publicationModel.create({content,id_user,description,bg,contentType});
+    const result = await publicationModel.create({content,id_user,description,bg,contentType,subscribers_only});
     await contentFeedModel.create({id_content:result._id,docModel:'publication'});    //if we use mix feed
     res.status(201).json(result);
   } catch (error) {
@@ -196,6 +196,20 @@ module.exports.likeOrNotPublication = async (req, res) => {
       );
   }
 };
+
+//F E T C H  C O M M E N T S
+module.exports.fetchComments=async(req,res)=>{
+  await publicationModel.findById(req.params.id,'comments')
+  .populate({
+    path: "comments",
+    populate: { path: "commenterId", select: "name picture job" },
+  })
+  .then(doc=>res.status(200).json(doc.comments))
+  .catch(err=>{
+    console.log('Fetching comments failed for publication '+req.params.id+' --- '+err);
+    res.status(500).send(err.message)
+  })
+}
 
 //C O M M E N T
 module.exports.commentPublication = async (req, res) => {

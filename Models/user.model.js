@@ -65,19 +65,32 @@ const userSchema = new mongoose.Schema(
         ref: "user",
       },
     ],
-    followNotification: 
+
+    friendRequestNotification: //demande d'ami
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "notification",
         default:null
       },
-    followings: [
+    friendAcceptNotification:
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "notification",
+        default:null
+      },
+    friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
       },
     ],
-    followers: [
+    friendRequest: [  //incoming friend request <-
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
+    ],
+    friendInvitation: [ //asking to be friend ->
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",

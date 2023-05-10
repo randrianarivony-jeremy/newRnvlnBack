@@ -6,6 +6,7 @@ router.post('/', publicationControler.createPublication);
 
 //READ
 router.get('/user/:id', publicationControler.readUserPublication);
+router.get('/comments/:id', publicationControler.fetchComments);
 router.get('/load-more/:date', publicationControler.loadMore);
 router.get('/load-news/:date', publicationControler.loadNews);
 router.get('/', publicationControler.readAllPublications);

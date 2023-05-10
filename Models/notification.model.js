@@ -4,7 +4,7 @@ const NotifSchema = new mongoose.Schema(
   {
     action: {
       type: String,
-      enum: ["like", "comment", "follow", "subscribe", "interview"],
+      enum: ["like", "comment", "friendRequest","friendAccepted", "subscribe", "interview"],
       required: true,
     },
     from: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },

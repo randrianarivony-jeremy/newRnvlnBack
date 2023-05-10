@@ -39,115 +39,42 @@ module.exports.currentUser = (req, res) => {
 };
 
 // R E L A T I O N
-module.exports.follow = async (req, res) => {
-  if (req.body.id_user == req.params.id) {  //auto following
-    res.status(400).send({err:'cannot self follow'});
-  } else {
-  if (req.body.follow) {
-    //follow
-    await UserModel.findByIdAndUpdate(
-      req.params.id,
-      {
-        $push: { followings: req.body.id_user },
-      },
-      { new: true }
-    ).then(
-      async () => {
-        await UserModel.findByIdAndUpdate(
-          req.body.id_user,
-          {
-            $push: { followers: req.params.id },
-          },
-          { new: true }
-        ).then(
-          (followed) => {
-            //notification tricks
-              if (followed.followNotification === null) {  //first follower
-                notificationModel.create({
-                    action: "follow",
-                    to: followed._id,
-                    from: req.params.id,
-                  })
-                  .then((newNotification) => {
-                    followed.followNotification = newNotification._id;
-                    followed.save().then(
-                      () => res.status(200).send("follow success"),
-                      (err) => {
-                        console.log("followed user updating follownotification failed for follower user " +req.params.id +"---" +err);
-                        res.status(500).send("following failed");
-                      }
-                    );
-                  },err=>{
-                    console.log("creating notification failed for follower user " +req.params.id +"---" +err);
-                        res.status(500).send("following failed");
-                  });
-              } else {
-                notificationModel
-                  .findByIdAndUpdate(followed.followNotification, {
-                    $set: { from: req.params.id },
-                  })
-                  .then(
-                    () => res.status(200).send("follow success"),
-                    (err) => {
-                      console.log("notification updating failed for follower user " +req.params.id +"---" +err);
-                      res.status(500).send("follow failed");
-                    }
-                  );
-              }
-            },
-            (err) => {
-            console.log("push followers failed");
-            res.status(500).send("push followers failed: " + err);
+module.exports.inviteToBeFriends = async (req, res) => {
+  try {
+    if (req.body.to===req.body.from) throw new Error('Cannot self request to be friends');
+    else {
+      await UserModel.findById(req.body.from,'friends friendInvitation')
+      .then(async(fromUser)=>{
+        if (fromUser.friends.includes(req.body.to)) throw new Error('Already friends');
+        else {
+          fromUser.friendInvitation.push(req.body.to);
+          fromUser.save();
+          await UserModel.findByIdAndUpdate(req.body.to,{
+            $push: {friendRequest: req.body.from}
+          },{new:true,select:'friendRequest friendRequestNotification'})
+          .then(async(toUser)=>{
+            if (toUser.friendRequestNotification===null){ //first incoming friend request
+              await notificationModel.create({
+                action: "friendRequest",
+              to: req.body.to,
+              from: req.body.from,
+            }).then(newNotification=>{
+              toUser.friendRequestNotification = newNotification._id;
+              toUser.save();
+            })
+          } else {
+            await notificationModel.findByIdAndUpdate(toUser.friendRequestNotification,{
+              $set : {from : req.bod.from}
+            })
           }
-          );
-      },
-      (err) => {
-        console.log("set following failed");
-        res.status(500).send("push followings failed: " + err);
-      }
-    );
-  } else {
-    //unfollow
-    await UserModel.findByIdAndUpdate(req.params.id, {
-      $pull: { followings: req.body.id_user },
-    }).then(
-      async () => {
-        await UserModel.findByIdAndUpdate(req.body.id_user, {
-          $pull: { followers: req.params.id },
-        },{new : true , select : 'followers followNotification'}).then(
-          (followed) => {
-            if (followed.followers.length === 0) {
-              notificationModel.findByIdAndDelete(followed.followNotification)
-                .then(
-                  () => {
-                    followed.followNotification = null;
-                    followed.save().then(
-                      () => res.status(200).send("unfollow done"),
-                      (err) => {
-                        console.log("setting follownotification to null failed for unfollower user " +req.params.id +"---" +err);
-                        res.status(500).send("unfollow action failed");
-                      }
-                    );
-                  },
-                  (err) => {
-                    console.log("deleting notification failed for unfollower user " +req.params.id +"---" +err);
-                    res.status(500).send("unfollow action failed");
-                  }
-                );
-            } else res.status(200).send("unfollow done");
-          },
-          (err) => {
-            console.log("pull followers failed");
-            res.status(500).send("pull followers failed: " + err);
-          }
-        );
-      },
-      (err) => {
-        console.log("pull following failed");
-        res.status(500).send("pull followings failed: " + err);
-      }
-      );
+          res.status(200).send('friend request sent successfully')
+        })
+        }
+      })
     }
+  } catch (error) {
+    console.log(error+"---"+req.body.sender);
+    res.send(error)
   }
 };
 
@@ -301,29 +228,14 @@ module.exports.unsubscribe = async (req, res) => {
   });
 };
 
-module.exports.fetchFollowers = (req, res) => {
+module.exports.fetchFriends = (req, res) => {
   UserModel.findById(req.params.id)
     .select(
-      "followers"
+      "friends"
     )
-    .populate("followers", "picture name job")
+    .populate("friends", "picture name job")
     .then(
       (doc) => res.status(200).send(doc.followers),
-      (err) => {
-        console.log(err);
-        res.status(500).send("user not found:" + req.params.id);
-      }
-    );
-};
-
-module.exports.fetchFollowings = (req, res) => {
-  UserModel.findById(req.params.id)
-    .select(
-      "followings"
-    )
-    .populate("followings", "picture name job")
-    .then(
-      (doc) => res.status(200).send(doc.followings),
       (err) => {
         console.log(err);
         res.status(500).send("user not found:" + req.params.id);
