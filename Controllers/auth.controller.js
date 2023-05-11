@@ -29,7 +29,7 @@ module.exports.signUp = async (req, res) => {
     });
     const token = createToken(user._id);
     // On le send password, on le met dans les cookies avec nom: jwt et comme value token
-    res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true });
+    res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true,sameSite:'none' });
     res.status(201).json(user);
   } catch (err) {
     res.status(400).send(err);
@@ -44,7 +44,7 @@ module.exports.signIn = async (req, res) => {
     const auth = await bcrypt.compare(password, user.password); //comparrer le name avec le base bcrypt
     if (auth) {
       const token = createToken(user._id);
-      res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true });
+      res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true,sameSite:true });
       const result = await UserModel.findOne({ email }).select("-password");
       res.status(200).json(result);
     } else {
