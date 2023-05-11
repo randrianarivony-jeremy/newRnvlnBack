@@ -44,7 +44,7 @@ module.exports.signIn = async (req, res) => {
     const auth = await bcrypt.compare(password, user.password); //comparrer le name avec le base bcrypt
     if (auth) {
       const token = createToken(user._id);
-      res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true,sameSite:true });
+      res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true,sameSite:'none' });
       const result = await UserModel.findOne({ email }).select("-password");
       res.status(200).json(result);
     } else {

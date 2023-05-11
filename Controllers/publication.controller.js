@@ -110,7 +110,7 @@ module.exports.fetchPublications = async (req, res) => {
 
   const fetchPrivatePublications=async()=>{
     privatePublications = await publicationModel
-    .find({$and:[{public:false},{$or:[{id_user:res.locals.user.friends},{id_user:res.locals.user._id},{id_user:res.locals.user.subscriptions}]}]})
+    .find({$and:[{public:false},{$or:[{id_user:res.locals.user?.friends},{id_user:res.locals.user?._id},{id_user:res.locals.user?.subscriptions}]}]})
     .populate("id_user", "name picture job")
     .populate({
       path: "question",strictPopulate:false,
