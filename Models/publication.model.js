@@ -8,11 +8,19 @@ const publicationSchema = new mongoose.Schema(
       ref: "user",
       required:true
     },
-    content: {type:String,required:true},
+    type: {type:String,required:true,enum:['interview','article'],default:'article'},
+    content: {type:String,required:true,trim:true},
     contentType: {type:String,required:true},
     bg: {type:String,default:''},
-    subscribers_only: {type:Boolean,default:false},
-    description: {type:String,default:''},
+    public: {type:Boolean,default:false},
+    description: {type:String,default:'',trim:true},
+    question: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "question",
+      required: function() {
+        return this.type =='interview';
+      },
+    },
     likers: [
       {
         type: mongoose.Schema.Types.ObjectId,

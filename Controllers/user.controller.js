@@ -64,16 +64,57 @@ module.exports.inviteToBeFriends = async (req, res) => {
             })
           } else {
             await notificationModel.findByIdAndUpdate(toUser.friendRequestNotification,{
-              $set : {from : req.bod.from}
+              $set : {from : req.body.from}
             })
           }
-          res.status(200).send('friend request sent successfully')
+          res.status(200).send('friend invitation sent successfully')
         })
         }
       })
     }
   } catch (error) {
-    console.log(error+"---"+req.body.sender);
+    console.log(error+"---"+req.body.from);
+    res.send(error)
+  }
+};
+
+module.exports.acceptToBeFriends = async (req, res) => {
+  try {
+    if (req.body.to===req.body.from) throw new Error('Cannot self accept to be friends');
+    else {
+      await UserModel.findById(req.body.from,'friends friendRequest')
+      .then(async(fromUser)=>{
+        if (fromUser.friends.includes(req.body.to)) throw new Error('Already friends');
+        if (!fromUser.friendRequest.includes(req.body.to)) throw new Error(req.body.to+' did not send friend request to '+req.body.from);
+        else {
+          fromUser.friends.push(req.body.to);
+          fromUser.friendRequest=fromUser.friendRequest.filter(user=>user!=req.body.to);
+          fromUser.save();
+          await UserModel.findByIdAndUpdate(req.body.to,{
+            $push: {friends: req.body.from},$pull:{friendInvitation:req.body.from}
+          },{new:true,select:'friendInvitation friends friendAcceptNotification'})
+          .then(async(toUser)=>{
+            if (toUser.friendAcceptNotification===null){ //first invitation friend accepted
+              await notificationModel.create({
+                action: "friendAccepted",
+              to: req.body.to,
+              from: req.body.from,
+            }).then(newNotification=>{
+              toUser.friendAcceptNotification = newNotification._id;
+              toUser.save();
+            })
+          } else {
+            await notificationModel.findByIdAndUpdate(toUser.friendAcceptNotification,{
+              $set : {from : req.body.from}
+            })
+          }
+          res.status(200).send('friend request accepted successfully')
+        })
+        }
+      })
+    }
+  } catch (error) {
+    console.log(error+"---"+req.body.from);
     res.send(error)
   }
 };

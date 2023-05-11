@@ -3,22 +3,27 @@ const UserModel = require("../Models/user.model");
 
 module.exports.checkUser = (req, res, next) => {
   const token = req.cookies.jwt;
-  if (token) {
-    jwt.verify(token, process.env.TOKEN_SECRET, async (err, decodedToken) => {
-      if (err) {
-        res.locals.user = null;
-        console.log('error');
-        res.cookie("jwt", "", { maxAge: 1 });
-        next();
-      } else {
-        let user = await UserModel.findById(decodedToken.id).select("-password");
-        res.locals.user = user;
-        next();
-      }
-    });
-  } else {
-    res.locals.user = null;
-    next();
+  try {
+    if (token) {
+      jwt.verify(token, process.env.TOKEN_SECRET, async (err, decodedToken) => {
+        if (err) {
+          res.locals.user = null;
+          console.log('error');
+          res.cookie("jwt", "", { maxAge: 1 });
+          next();
+        } else {
+          let user = await UserModel.findById(decodedToken.id).select("-password");
+          res.locals.user = user;
+          next();
+        }
+      });
+    } else {
+      res.locals.user = null;
+      // throw 'Token cookie missing';
+      next();
+    }
+  } catch (error) {
+    res.status(300).send(error);
   }
 };
 

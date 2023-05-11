@@ -9,9 +9,7 @@ const bodyParser = require("body-parser");
 const { checkUser, requireAuth } = require("./config/auth.middleware");
 const cookieParser = require("cookie-parser");
 const questionRoutes = require("./Routes/question.routes");
-const interviewRoutes = require("./Routes/interview.routes");
 const publicationRoutes = require("./Routes/publication.routes");
-const contentFeedRoutes = require("./Routes/contentFeed.routes");
 const messageRoutes = require("./Routes/message.routes");
 const conversationRoutes = require("./Routes/conversation.routes");
 const notifRoutes = require("./Routes/notification.routes");
@@ -37,7 +35,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // //jwt
-app.get("*", checkUser);
+// app.use(/[^\/login\/register]/g, checkUser);  //all req except /register or /login
+app.use('*', checkUser);
 app.get("/jwtid", requireAuth, (req, res) => {
   res.status(200).send(res.locals.user);
 });
@@ -45,9 +44,7 @@ app.get("/jwtid", requireAuth, (req, res) => {
 // //routes
 app.use("/api/user", userRoutes);
 app.use('/api/question',questionRoutes);
-app.use('/api/interview',interviewRoutes);
 app.use('/api/publication',publicationRoutes);
-app.use('/api/feeds',contentFeedRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/conversation", conversationRoutes);
 app.use("/api/notification", notifRoutes);

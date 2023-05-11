@@ -11,13 +11,16 @@ const createToken = (id) => {
 };
 
 module.exports.signUp = async (req, res) => {
-  const { name, email, job, address, picture } = req.body;
+  const { email, job, address, picture } = req.body;
+  const PascalCaseName = () =>{
+    return req.body.name.replace(/\w\S*/g,m=>m.charAt(0).toUpperCase()+m.substr(1).toLowerCase());
+  }
   let { password } = req.body;
   try {
     const salt = await bcrypt.genSalt(10);
     password = await bcrypt.hash(password, salt);
     const user = await UserModel.create({
-      name,
+      name:PascalCaseName(),
       email,
       password,
       job,
@@ -26,7 +29,7 @@ module.exports.signUp = async (req, res) => {
     });
     const token = createToken(user._id);
     // On le send password, on le met dans les cookies avec nom: jwt et comme value token
-    res.cookie("jwt", token, { httpOnly: true, maxAge });
+    res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true });
     res.status(201).json(user);
   } catch (err) {
     res.status(400).send(err);
