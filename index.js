@@ -5,6 +5,7 @@ require("./config/db.js");
 const connectDB = require("./config/db.js");
 const cors = require("cors");
 const userRoutes = require("./Routes/user.routes");
+const authRoutes = require("./Routes/authentication.routes");
 const bodyParser = require("body-parser");
 const { checkUser, requireAuth } = require("./config/auth.middleware");
 const cookieParser = require("cookie-parser");
@@ -35,22 +36,19 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // //jwt
-// app.use(/[^\/login\/register]/g, checkUser);  //all req except /register or /login
-app.use('*', checkUser);
-app.get("/jwtid", requireAuth, (req, res) => {
+app.get("/jwtid", checkUser, (req, res) => {
   res.status(200).send(res.locals.user);
 });
 
 // //routes
-app.use("/api/user", userRoutes);
-app.use('/api/question',questionRoutes);
-app.use('/api/publication',publicationRoutes);
-app.use("/api/message", messageRoutes);
-app.use("/api/conversation", conversationRoutes);
-app.use("/api/notification", notifRoutes);
-// app.use("/api/chat", chatRoutes);
+app.use("/api/auth",authRoutes);
+app.use("/api/user", checkUser,userRoutes);
+app.use('/api/question', checkUser,questionRoutes);
+app.use('/api/publication',checkUser,publicationRoutes);
+app.use("/api/message", checkUser,messageRoutes);
+app.use("/api/conversation", checkUser,conversationRoutes);
+app.use("/api/notification", checkUser,notifRoutes);
 // app.use('/api/input',suggestion);
-// app.use('/api/feed',feedRoutes);
 
 
 //server
