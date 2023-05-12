@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 // Creer un token valable pour 3jrs
-const maxAge = 3 * 24 * 60 * 60 * 1000; //3jrs en millisecondes
+const maxAge = 3 * 24 * 60 * 5 * 1000; //3jrs en millisecondes
 const createToken = (id,password) => {
   return jwt.sign({ id,password }, process.env.TOKEN_SECRET, {
     expiresIn: maxAge,
@@ -72,7 +72,7 @@ module.exports.signInWithFacebook = async (req, res) => {
 };
 
 module.exports.logout = (req, res) => {
-  res.clearCookie("jwt");
+  res.cookie('jwt', '', { maxAge: 1 });
   // res.redirect("/"); //redirect
   res.status(200).send("cookie removed");
 };

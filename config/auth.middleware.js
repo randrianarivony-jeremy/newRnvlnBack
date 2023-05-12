@@ -13,7 +13,7 @@ module.exports.checkUser = async(req, res, next) => {
       throw "Token cookie missing";
     }
   } catch (error) {
-    res.clearCookie("jwt");
+    res.cookie('jwt', '', { maxAge: 1 });
     res.status(401).send(error);
     console.log(error);
   }

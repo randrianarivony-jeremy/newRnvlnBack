@@ -27,17 +27,17 @@ const userSchema = new mongoose.Schema(
     project: {
       type: String,
       max: 200,
-      default:''
+      default: "",
     },
     job: {
       type: String,
       max: 30,
-      default:''
+      default: "",
     },
     address: {
       type: String,
       max: 30,
-      default:''
+      default: "",
     },
     subscription: {
       type: Boolean,
@@ -47,12 +47,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: undefined,
     },
-    subscriptionNotification: 
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "notification",
-        default:null
-      },
+    subscriptionNotification: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "notification",
+      default: null,
+    },
     subscribers: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -66,24 +65,28 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
-    friendRequestNotification: //demande d'ami
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "notification",
-        default:null
-      },
-    friendAcceptNotification:
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "notification",
-        default:null
-      },
-    friends: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
-      },
-    ],
+    //demande d'ami
+    friendRequestNotification: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "notification",
+      default: null,
+    },
+    friendAcceptNotification: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "notification",
+      default: null,
+    },
+    friends: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "user",
+        },
+      ],
+      validate: [function(val){
+        return val.length<2;
+      },"2 friends max"],
+    },
     friendRequest: [  //incoming friend request <-
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -102,9 +105,9 @@ const userSchema = new mongoose.Schema(
         ref: "contentfeed",
       },
     ],
-    wallet:{
-      type:Number,
-      default:0
+    wallet: {
+      type: Number,
+      default: 0,
     },
     notificationSeen: {
       type: Number,
