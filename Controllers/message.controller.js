@@ -82,20 +82,16 @@ module.exports.createMessage = async (req, res) => {
 
 module.exports.fetchMessages = async (req, res) => {
   try {
-    const messages = await conversationModel.findById(
-      req.params.conversationId)
+    const messages = await conversationModel.findOne(
+      {members: {$all:[req.params.user,res.locals.user._id]}})
       .populate("members", "name picture job")
       .populate("messages")
       .sort({ createdAt: -1 })
       .limit(10);
     res.status(200).json(messages);
   } catch (err) {
-    if (err.message===`Cast to ObjectId failed for value "${req.params.conversationId}" (type string) at path "_id" for model "conversation"`)
-    res.status(200).send('new conversation')
-    else {
-      console.log("message fetching failed" + req.params.conversationId + "---" + err.message);
+      console.log("message fetching failed" + req.params.user + "---" + err.message);
       res.status(500).send("message fetching failed");
-    }
   }
 };
 

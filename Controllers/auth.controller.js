@@ -4,8 +4,8 @@ const bcrypt = require("bcrypt");
 
 // Creer un token valable pour 3jrs
 const maxAge = 3 * 24 * 60 * 5 * 1000; //3jrs en millisecondes
-const createToken = (id,password) => {
-  return jwt.sign({ id,password }, process.env.TOKEN_SECRET, {
+const createToken = (id,email,name) => {
+  return jwt.sign({ id,email,name }, process.env.TOKEN_SECRET, {
     expiresIn: maxAge,
   });
 };
@@ -27,7 +27,7 @@ module.exports.signUp = async (req, res) => {
       address,
       picture,
     });
-    const token = createToken(user._id,password);
+    const token = createToken(user._id,user.email,user.name);
     // On le send password, on le met dans les cookies avec nom: jwt et comme value token
     res.cookie("jwt", token, { httpOnly: true, maxAge,secure:true,sameSite:'none' });
     res.status(201).json(user);
@@ -43,7 +43,7 @@ module.exports.signIn = async (req, res) => {
   if (user) {
     const auth = await bcrypt.compare(password, user.password); //comparrer le name avec le base bcrypt
     if (auth) {
-      const token = createToken(user._id,user.password);
+      const token = createToken(user._id,user.email,user.name);
       res.cookie("jwt", token, { httpOnly: true, maxAge, secure: true,sameSite:'none' });
       const result = await UserModel.findOne({ email }).select("-password");
       res.status(200).json(result);

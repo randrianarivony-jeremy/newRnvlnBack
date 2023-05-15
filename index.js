@@ -52,7 +52,6 @@ app.use("/api/notification", checkUser,notifRoutes);
 
 
 //server
-const PORT = process.env.PORT;
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
+app.listen(process.env.PORT, () => {
+  console.log(`Listening on port ${process.env.PORT}`);
 });

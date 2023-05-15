@@ -15,6 +15,8 @@ router.patch('/subscribe/:id', userController.subscribe);
 router.patch('/unsubscribe/:id', userController.unsubscribe);
 router.patch('/friend_invitation', userController.inviteToBeFriends);
 router.patch('/accept_friend', userController.acceptToBeFriends);
+router.patch('/pull_friend', userController.pullFromFriends);
+router.patch('/cancel_invitation', userController.cancelInvitation);
 
 //Updating
 router.put('/username/:id', userController.updateUsername);

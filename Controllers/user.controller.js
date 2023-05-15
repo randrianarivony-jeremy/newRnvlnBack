@@ -24,7 +24,6 @@ module.exports.userInfo = (req, res) => {
     );
 };
 
-
 // R E A D  C U R R E N T  U S E R
 module.exports.currentUser = (req, res) => {
   UserModel.findById(req.params.id)
@@ -41,81 +40,175 @@ module.exports.currentUser = (req, res) => {
 // R E L A T I O N
 module.exports.inviteToBeFriends = async (req, res) => {
   try {
-    if (req.body.to===req.body.from) throw new Error('Cannot self request to be friends');
+    if (req.body.to === req.body.from)
+      throw new Error("Cannot self request to be friends");
     else {
-      await UserModel.findById(req.body.from,'friends friendInvitation')
-      .then(async(fromUser)=>{
-        if (fromUser.friends.includes(req.body.to)) throw new Error('Already friends');
-        else {
-          fromUser.friendInvitation.push(req.body.to);
-          fromUser.save();
-          await UserModel.findByIdAndUpdate(req.body.to,{
-            $push: {friendRequest: req.body.from}
-          },{new:true,select:'friendRequest friendRequestNotification'})
-          .then(async(toUser)=>{
-            if (toUser.friendRequestNotification===null){ //first incoming friend request
-              await notificationModel.create({
-                action: "friendRequest",
-              to: req.body.to,
-              from: req.body.from,
-            }).then(newNotification=>{
-              toUser.friendRequestNotification = newNotification._id;
-              toUser.save();
-            })
-          } else {
-            await notificationModel.findByIdAndUpdate(toUser.friendRequestNotification,{
-              $set : {from : req.body.from}
-            })
+      await UserModel.findById(req.body.from, "friends friendInvitation").then(
+        async (fromUser) => {
+          if (fromUser.friends.includes(req.body.to))
+            throw new Error("Already friends");
+          else {
+            fromUser.friendInvitation.push(req.body.to);
+            fromUser.save();
+            await UserModel.findByIdAndUpdate(
+              req.body.to,
+              {
+                $push: { friendRequest: req.body.from },
+              },
+              { new: true, select: "friendRequest friendRequestNotification" }
+            ).then(async (toUser) => {
+              if (toUser.friendRequestNotification === null) {
+                //first incoming friend request
+                await notificationModel
+                  .create({
+                    action: "friendRequest",
+                    to: req.body.to,
+                    from: req.body.from,
+                  })
+                  .then((newNotification) => {
+                    toUser.friendRequestNotification = newNotification._id;
+                    toUser.save();
+                  });
+              } else {
+                await notificationModel.findByIdAndUpdate(
+                  toUser.friendRequestNotification,
+                  {
+                    $set: { from: req.body.from },
+                  }
+                );
+              }
+              res.status(200).send("friend invitation sent successfully");
+            });
           }
-          res.status(200).send('friend invitation sent successfully')
-        })
         }
-      })
+      );
     }
   } catch (error) {
-    console.log(error+"---"+req.body.from);
-    res.send(error)
+    console.log(error + "---" + req.body.from);
+    res.send(error);
   }
 };
 
 module.exports.acceptToBeFriends = async (req, res) => {
   try {
-    if (req.body.to===req.body.from) throw new Error('Cannot self accept to be friends');
+    if (req.body.to === req.body.from)
+      throw new Error("Cannot self accept to be friends");
     else {
-      await UserModel.findById(req.body.from,'friends friendRequest')
-      .then(async(fromUser)=>{
-        if (fromUser.friends.includes(req.body.to)) throw new Error('Already friends');
-        if (!fromUser.friendRequest.includes(req.body.to)) throw new Error(req.body.to+' did not send friend request to '+req.body.from);
-        else {
-          fromUser.friends.push(req.body.to);
-          fromUser.friendRequest=fromUser.friendRequest.filter(user=>user!=req.body.to);
-          fromUser.save();
-          await UserModel.findByIdAndUpdate(req.body.to,{
-            $push: {friends: req.body.from},$pull:{friendInvitation:req.body.from}
-          },{new:true,select:'friendInvitation friends friendAcceptNotification'})
-          .then(async(toUser)=>{
-            if (toUser.friendAcceptNotification===null){ //first invitation friend accepted
-              await notificationModel.create({
-                action: "friendAccepted",
-              to: req.body.to,
-              from: req.body.from,
-            }).then(newNotification=>{
-              toUser.friendAcceptNotification = newNotification._id;
-              toUser.save();
-            })
-          } else {
-            await notificationModel.findByIdAndUpdate(toUser.friendAcceptNotification,{
-              $set : {from : req.body.from}
-            })
+      await UserModel.findById(req.body.from, "friends friendRequest").then(
+        async (fromUser) => {
+          if (fromUser.friends.includes(req.body.to))
+            throw new Error("Already friends");
+          if (!fromUser.friendRequest.includes(req.body.to))
+            throw new Error(
+              req.body.to + " did not send friend request to " + req.body.from
+            );
+          else {
+            fromUser.friends.push(req.body.to);
+            fromUser.friendRequest = fromUser.friendRequest.filter(
+              (user) => user != req.body.to
+            );
+            fromUser.save();
+            await UserModel.findByIdAndUpdate(
+              req.body.to,
+              {
+                $push: { friends: req.body.from },
+                $pull: { friendInvitation: req.body.from },
+              },
+              {
+                new: true,
+                select: "friendInvitation friends friendAcceptNotification",
+              }
+            ).then(async (toUser) => {
+              if (toUser.friendAcceptNotification === null) {
+                //first invitation friend accepted
+                await notificationModel
+                  .create({
+                    action: "friendAccepted",
+                    to: req.body.to,
+                    from: req.body.from,
+                  })
+                  .then((newNotification) => {
+                    toUser.friendAcceptNotification = newNotification._id;
+                    toUser.save();
+                  });
+              } else {
+                await notificationModel.findByIdAndUpdate(
+                  toUser.friendAcceptNotification,
+                  {
+                    $set: { from: req.body.from },
+                  }
+                );
+              }
+              res.status(200).send("friend request accepted successfully");
+            });
           }
-          res.status(200).send('friend request accepted successfully')
-        })
         }
-      })
+      );
     }
   } catch (error) {
-    console.log(error+"---"+req.body.from);
-    res.send(error)
+    console.log(error + "---" + req.body.from);
+    res.send(error);
+  }
+};
+
+module.exports.pullFromFriends = async (req, res) => {
+  if (req.body.to === req.body.from)
+    throw new Error("Same user not supposed to be friends (pullFromFriends)");
+  if (!res.locals.user.friends.includes(req.body.to))
+    throw new Error("Already not friends");
+  else {
+    await Promise.all([
+      UserModel.findByIdAndUpdate(req.body.from,
+        {
+          $pull: { friends: req.body.to },
+        },
+        { select: "friends" }
+      ),
+      UserModel.findByIdAndUpdate(req.body.to,
+        {
+          $pull: { friends: req.body.from },
+        },
+        { select: "friends" }
+      ),
+    ])
+      .then(() =>
+        res.status(200)
+          .send(`pulling ${req.body.to} from friends done successfully`)
+      )
+      .catch((err) => {
+        res.send(err);
+        console.log(`pulling ${req.body.to} from ${req.bod.from}'s friends failed`);
+      });
+  }
+};
+
+module.exports.cancelInvitation = (req, res) => {
+  try {
+    if (req.body.to === req.body.from)
+      throw new Error("Same user not supposed to be friends (cancelInvitation)");
+    if (!res.locals.user.friendInvitation.includes(req.body.to))
+      throw new Error(`${req.body.from} did not send friend invitation to ${req.body.to}`);
+    else {
+      Promise.all([
+        UserModel.findByIdAndUpdate(req.body.from,
+          {$pull: { friendInvitation: req.body.to },},
+          { select: "friendInvitation" }
+        ),
+        UserModel.findByIdAndUpdate(req.body.to,
+          {$pull: { friendRequest: req.body.from },},
+          { select: "friendRequest" }
+        ),
+      ]).then(() =>
+        res.status(200).send(`cancelling ${req.body.from}'s friend invitation to ${req.body.to} done successfully`)
+      );
+    }
+  } catch (error) {
+    {
+      res.send(error);
+      console.log(
+        `cancelling ${req.body.from}'s friend invitation to ${req.body.to} failed. Reason :` + error
+      );
+    }
   }
 };
 
@@ -125,9 +218,12 @@ module.exports.enableSubscription = async (req, res) => {
     if (auth) {
       if (req.body.enabled) {
         user.subscription = true;
-        user.fees=req.body.fees;
+        user.fees = req.body.fees;
         user.save().then(
-          (doc) => res.status(200).json({ subscription: doc.subscription,fees:doc.fees }),
+          (doc) =>
+            res
+              .status(200)
+              .json({ subscription: doc.subscription, fees: doc.fees }),
           (err) => {
             console.log("enable subscription failed for " + user + "---" + err);
             res.status(500).send("enable subscription failed");
@@ -148,10 +244,16 @@ module.exports.enableSubscription = async (req, res) => {
 };
 
 module.exports.subscribe = async (req, res) => {
-  let subscriber = await UserModel.findById(req.params.id,'password subscriptions wallet');
+  let subscriber = await UserModel.findById(
+    req.params.id,
+    "password subscriptions wallet"
+  );
   const auth = await bcrypt.compare(req.body.password, subscriber.password); //comparrer le name avec le base bcrypt
   if (auth) {
-    await UserModel.findById(req.body.id_user,'fees subscriptionNotification wallet subscribers').then(
+    await UserModel.findById(
+      req.body.id_user,
+      "fees subscriptionNotification wallet subscribers"
+    ).then(
       async (subscribed) => {
         if (subscriber.wallet < subscribed.fees)
           res.status(400).send("insufficient");
@@ -159,43 +261,63 @@ module.exports.subscribe = async (req, res) => {
           subscriber.wallet -= subscribed.fees;
           subscriber.subscriptions.push(subscribed._id);
           await subscriber.save().then(
-             () => {
+            () => {
               subscribed.wallet += subscribed.fees;
               subscribed.subscribers.push(subscriber._id);
 
               //notification tricks
-                if (subscribed.subscriptionNotification === null) {  //first subscriber
-                  notificationModel.create({
-                      action: "subscribe",
-                      to: subscribed._id,
-                      from: req.params.id,
-                    })
-                    .then((newNotification) => {
+              if (subscribed.subscriptionNotification === null) {
+                //first subscriber
+                notificationModel
+                  .create({
+                    action: "subscribe",
+                    to: subscribed._id,
+                    from: req.params.id,
+                  })
+                  .then(
+                    (newNotification) => {
                       subscribed.subscriptionNotification = newNotification._id;
                       subscribed.save().then(
                         () => res.status(200).send("subscription success"),
                         (err) => {
-                          console.log("subscribed user updating subscriptionnotification failed for subscriber user " +req.params.id +"---" +err);
+                          console.log(
+                            "subscribed user updating subscriptionnotification failed for subscriber user " +
+                              req.params.id +
+                              "---" +
+                              err
+                          );
                           res.status(500).send("subscribing failed");
                         }
                       );
-                    },err=>{
-                      console.log("creating notification failed for subscriber user " +req.params.id +"---" +err);
-                          res.status(500).send("subscribing failed");
-                    });
-                } else {
-                  notificationModel
-                    .findByIdAndUpdate(subscribed.subscriptionNotification, {
-                      $set: { from: req.params.id },
-                    })
-                    .then(
-                      () => res.status(200).send("subscribing success"),
-                      (err) => {
-                        console.log("notification updating failed for subscriber user " +req.params.id +"---" +err);
-                        res.status(500).send("subscription failed");
-                      }
-                    );
-                }
+                    },
+                    (err) => {
+                      console.log(
+                        "creating notification failed for subscriber user " +
+                          req.params.id +
+                          "---" +
+                          err
+                      );
+                      res.status(500).send("subscribing failed");
+                    }
+                  );
+              } else {
+                notificationModel
+                  .findByIdAndUpdate(subscribed.subscriptionNotification, {
+                    $set: { from: req.params.id },
+                  })
+                  .then(
+                    () => res.status(200).send("subscribing success"),
+                    (err) => {
+                      console.log(
+                        "notification updating failed for subscriber user " +
+                          req.params.id +
+                          "---" +
+                          err
+                      );
+                      res.status(500).send("subscription failed");
+                    }
+                  );
+              }
             },
             (err) => {
               console.log("Subscribe : subscriber wallet logic failed" + err);
@@ -206,7 +328,10 @@ module.exports.subscribe = async (req, res) => {
       },
       (err) => {
         console.log(
-          "Subscribe : subscribed user not found: id" + req.body.id_user + "---" + err
+          "Subscribe : subscribed user not found: id" +
+            req.body.id_user +
+            "---" +
+            err
         );
         res.status(500).send("subscription user not found");
       }
@@ -217,63 +342,83 @@ module.exports.subscribe = async (req, res) => {
 };
 
 module.exports.unsubscribe = async (req, res) => {
-  await UserModel.findById(req.params.id,'password').then(async (unsubscriber) => {
-    const auth = await bcrypt.compare(req.body.password, unsubscriber.password);
-    if (auth) {
-      await UserModel.findByIdAndUpdate(req.params.id, {
-        $pull: { subscriptions: req.body.id_user },
-      }).then(
-        async () =>
-          await UserModel.findByIdAndUpdate(req.body.id_user, {
-            $pull: { subscribers: req.params.id },
-          },{new:true,select:'subscriptionNotification subscribers'}).then(
-            (subscribed) => {
-            if (subscribed.subscribers.length === 0) {
-              notificationModel.findByIdAndDelete(subscribed.subscriptionNotification)
-                .then(
-                  () => {
-                    subscribed.subscriptionNotification = null;
-                    subscribed.save().then(
-                      () => res.status(200).send("unsubscribe done"),
+  await UserModel.findById(req.params.id, "password").then(
+    async (unsubscriber) => {
+      const auth = await bcrypt.compare(
+        req.body.password,
+        unsubscriber.password
+      );
+      if (auth) {
+        await UserModel.findByIdAndUpdate(req.params.id, {
+          $pull: { subscriptions: req.body.id_user },
+        }).then(
+          async () =>
+            await UserModel.findByIdAndUpdate(
+              req.body.id_user,
+              {
+                $pull: { subscribers: req.params.id },
+              },
+              { new: true, select: "subscriptionNotification subscribers" }
+            ).then(
+              (subscribed) => {
+                if (subscribed.subscribers.length === 0) {
+                  notificationModel
+                    .findByIdAndDelete(subscribed.subscriptionNotification)
+                    .then(
+                      () => {
+                        subscribed.subscriptionNotification = null;
+                        subscribed.save().then(
+                          () => res.status(200).send("unsubscribe done"),
+                          (err) => {
+                            console.log(
+                              "setting subscriptionnotification to null failed for unsubscriber user " +
+                                req.params.id +
+                                "---" +
+                                err
+                            );
+                            res
+                              .status(500)
+                              .send("unsubscription action failed");
+                          }
+                        );
+                      },
                       (err) => {
-                        console.log("setting subscriptionnotification to null failed for unsubscriber user " +req.params.id +"---" +err);
+                        console.log(
+                          "deleting notification failed for unsubscriber user " +
+                            req.params.id +
+                            "---" +
+                            err
+                        );
                         res.status(500).send("unsubscription action failed");
                       }
                     );
-                  },
-                  (err) => {
-                    console.log("deleting notification failed for unsubscriber user " +req.params.id +"---" +err);
-                    res.status(500).send("unsubscription action failed");
-                  }
-                );
-            } else res.status(200).send("unsubscription action done");
-          },
-            (err) => {
-              console.log("Unsubscribe : pull subscriber failed" + err);
-              res.status(500).send("pull subscriber failed");
-            }
-          ),
-        (err) => {
-          console.log(
-            "Subscribe : subscription user not found: id" +
-              req.body.id_user +
-              "---" +
-              err
-          );
-          res.status(500).send("subscription user not found");
-        }
-      );
-    } else {
-      res.status(400).send("Mot de passe incorrect");
+                } else res.status(200).send("unsubscription action done");
+              },
+              (err) => {
+                console.log("Unsubscribe : pull subscriber failed" + err);
+                res.status(500).send("pull subscriber failed");
+              }
+            ),
+          (err) => {
+            console.log(
+              "Subscribe : subscription user not found: id" +
+                req.body.id_user +
+                "---" +
+                err
+            );
+            res.status(500).send("subscription user not found");
+          }
+        );
+      } else {
+        res.status(400).send("Mot de passe incorrect");
+      }
     }
-  });
+  );
 };
 
 module.exports.fetchFriends = (req, res) => {
   UserModel.findById(req.params.id)
-    .select(
-      "friends"
-    )
+    .select("friends")
     .populate("friends", "picture name job")
     .then(
       (doc) => res.status(200).send(doc.followers),
@@ -286,9 +431,7 @@ module.exports.fetchFriends = (req, res) => {
 
 module.exports.fetchSubscribers = (req, res) => {
   UserModel.findById(req.params.id)
-    .select(
-      "subscribers"
-    )
+    .select("subscribers")
     .populate("subscribers", "picture name job")
     .then(
       (doc) => res.status(200).send(doc.subscribers),
@@ -301,9 +444,7 @@ module.exports.fetchSubscribers = (req, res) => {
 
 module.exports.fetchSubscriptions = (req, res) => {
   UserModel.findById(req.params.id)
-    .select(
-      "subscriptions"
-    )
+    .select("subscriptions")
     .populate("subscriptions", "picture name job")
     .then(
       (doc) => res.status(200).send(doc.subscriptions),
