@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const notificationController = require("../Controllers/notification.controller");
-router.get("/:id", notificationController.fetchUserNotification);
+router.get("/", notificationController.fetchUserNotification);
+router.get("/new", notificationController.checkNewNotificationNumber);
 
 module.exports = router;

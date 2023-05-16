@@ -7,7 +7,6 @@ const ConversationSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
         required: true,
-        unique:true
       },
     ],
     messages: [
@@ -16,7 +15,16 @@ const ConversationSchema = new mongoose.Schema(
         ref: "message",
       },
     ],
-    newMessage: [
+    unseenMessage: [    //unseen message
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "user"
+        },
+        new: { type: Number, default: 0 },
+      },
+    ],
+    newMessage: [   //new incoming message either seen or not
       {
         user: {
           type: mongoose.Schema.Types.ObjectId,

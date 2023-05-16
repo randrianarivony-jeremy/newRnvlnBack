@@ -20,12 +20,13 @@ module.exports.createMessage = async (req, res) => {
           await conversationModel
             .updateOne({ _id: conversationId },{
                 $push: { messages: savedMessage._id },
-                $set: { newMessage: [{user:sender},{user:recipient,new:1}] }
+                $set: { unseenMessage: [{user:sender},{user:recipient,new:1}],
+                        newMessage: [{user:sender},{user:recipient,new:1}] }
             })
             .then(async () => {
                 await UserModel.updateOne({ _id: recipient },
                   {$inc: { messageNotSeen: 1 },})
-                  .then(() => res.status(201).json(savedMessage),
+                  .then(() => res.status(201).json({newMessage:savedMessage,category}),
                   (err) => {
                     console.log("incrementation messagenotseen failed for user" +recipient +"---" +err);
                     res.status(500).send("incrementation messagenotseen failed");
@@ -46,11 +47,15 @@ module.exports.createMessage = async (req, res) => {
     })
   }
   else {
-    await messageModel.create({ conversationId, sender, content,contentType }).then(
+    await messageModel.create({ conversationId, sender, content,contentType })
+    .then(
     async (savedMessage) => {
       await conversationModel.findOne({_id:conversationId})
         .then(conversation=>{
           conversation.messages = [...conversation.messages,savedMessage._id];
+          conversation.unseenMessage = conversation.unseenMessage.map(user=>{
+            if (user.user==recipient) return {...user,new:user.new+1}; else return user;
+          });
           conversation.newMessage = conversation.newMessage.map(user=>{
             if (user.user==recipient) return {...user,new:user.new+1}; else return user;
           });
@@ -58,7 +63,7 @@ module.exports.createMessage = async (req, res) => {
           .then(async () => {
             await UserModel.updateOne({ _id: recipient },
               {$inc: { messageNotSeen: 1 },})
-              .then(() => res.status(201).json(savedMessage),
+              .then(() => res.status(201).json({newMessage:savedMessage,category}),
               (err) => {
                 console.log("incrementation messagenotseen failed for user" +recipient +"---" +err);
                 res.status(500).send("incrementation messagenotseen failed");
@@ -92,7 +97,7 @@ module.exports.fetchMessages = async (req, res) => {
       .populate("messages")
       .sort({ createdAt: -1 })
       .limit(10);
-      if (messages!==null){messages.newMessage = messages.newMessage.map(elt=>{
+      if (messages!==null){messages.unseenMessage = messages.unseenMessage.map(elt=>{
         if (String(elt.user)==String(res.locals.user._id)) return {...elt,new : 0};
         else return elt;
       });

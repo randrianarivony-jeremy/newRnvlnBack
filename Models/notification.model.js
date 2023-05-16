@@ -12,6 +12,10 @@ const NotifSchema = new mongoose.Schema(
     on: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "publication"
+    },
+    seen:{
+      type:Boolean,
+      default:false
     }
   },
   { timestamps: true }
