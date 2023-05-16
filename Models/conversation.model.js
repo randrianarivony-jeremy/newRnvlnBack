@@ -25,6 +25,12 @@ const ConversationSchema = new mongoose.Schema(
         new: { type: Number, default: 0 },
       },
     ],
+    category:{
+      type:String,
+      required:true,
+      enum:['main','second'],
+      default:'second'
+    }
   },
   { timestamps: true }
 );

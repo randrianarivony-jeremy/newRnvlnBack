@@ -11,12 +11,8 @@ const NotifSchema = new mongoose.Schema(
     to: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
     on: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: "docModel"
-    },
-    docModel:{
-      type:'String',
-      enum:['publication','interview']
-    },
+      ref: "publication"
+    }
   },
   { timestamps: true }
 );

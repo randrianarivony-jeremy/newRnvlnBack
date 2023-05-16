@@ -26,9 +26,9 @@ module.exports.createPublication = async (req, res) => {
               from: id_user,
               to: questionDoc.interviewer,
               on: interview._id,
-              docModel: "interview",
             })
             .then((newNotification) => {
+              socket.emit('notification action',newNotification)
               questionDoc.interviewNotification = newNotification._id;
               questionDoc.save();
             });
@@ -200,8 +200,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   action: "like",
                   to: interview.id_user,
                   from: req.body.id_user,
-                  on: interview._id,
-                  docModel: "interview",
+                  on: interview._id
                 })
                 .then(
                   (newNotification) => {
@@ -231,11 +230,13 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 );
             } else {
               notificationModel
-                .findByIdAndUpdate(interview.likeNotification, {
-                  $set: { from: req.body.id_user },
-                })
-                .then(
-                  () => res.status(200).send("liking post success"),
+              .findByIdAndUpdate(interview.likeNotification, {
+                $set: { from: req.body.id_user },
+              })
+              .then(
+                () => {
+                    res.status(200).send("liking post success");
+                },
                   (err) => {
                     console.log(
                       "notification updating failed for liking interview " +
@@ -369,7 +370,6 @@ module.exports.commentPublication = async (req, res) => {
                 to: interview.id_user,
                 from: req.body.commenterId,
                 on: interview._id,
-                docModel: "interview",
               })
               .then(
                 (newNotification) => {
@@ -486,64 +486,4 @@ module.exports.deleteCommentpost = async (req, res) => {
         res.status(500).send("deleting comment failed");
       }
     );
-};
-
-//P R O J E C T
-module.exports.projectPost = async (req, res) => {
-  if (!ObjectId.isValid(req.params.id))
-    return res.status(400).send("ID unknown : " + req.params.id);
-  // req.body:like et id_user
-  try {
-    var projecters;
-    if (req.body.project) {
-      projecters = await publicationModel.findByIdAndUpdate(
-        req.params.id,
-        {
-          $push: { project: req.body.id_user },
-        },
-        { new: true }
-      );
-    } else {
-      projecters = await publicationModel.findByIdAndUpdate(
-        req.params.id,
-        {
-          $pull: { project: req.body.id_user },
-        },
-        { new: true }
-      );
-    }
-
-    res.status(200).json({ projecters: projecters.project });
-  } catch (err) {
-    console.log(err);
-    return res.status(400);
-  }
-};
-
-//S A V I N G
-module.exports.savePost = async (req, res) => {
-  if (!ObjectId.isValid(req.params.id))
-    return res.status(400).send("ID unknown : " + req.params.id);
-  // req.body:like et id_user
-  try {
-    var save;
-    if (req.body.save) {
-      save = await publicationModel.findByIdAndUpdate(
-        req.params.id,
-        {
-          $push: { savings: req.body.id_user },
-        },
-        { new: true }
-      );
-    } else {
-      save = await publicationModel.findByIdAndUpdate(req.params.id, {
-        $pull: { savings: req.body.id_user },
-      });
-    }
-
-    res.status(200).json(save);
-  } catch (err) {
-    console.log(err);
-    return res.status(400);
-  }
 };

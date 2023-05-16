@@ -24,11 +24,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxLength: 200,
     },
-    project: {
-      type: String,
-      max: 200,
-      default: "",
-    },
     job: {
       type: String,
       max: 30,
@@ -99,21 +94,15 @@ const userSchema = new mongoose.Schema(
         ref: "user",
       },
     ],
-    savings: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "contentfeed",
-      },
-    ],
     wallet: {
       type: Number,
       default: 0,
     },
-    notificationSeen: {
+    newNotification: {
       type: Number,
       default: 0,
     },
-    messageNotSeen: {
+    newMessage: {
       type: Number,
       default: 0,
     },

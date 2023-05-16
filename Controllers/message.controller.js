@@ -2,15 +2,19 @@ const conversationModel = require("../Models/conversation.model");
 const messageModel = require("../Models/message.model");
 const UserModel = require("../Models/user.model");
 
-//add
+//create conversation and message
 module.exports.createMessage = async (req, res) => {
   let { sender, recipient, content,contentType, conversationId } = req.body;
+  let category = 'second';
+  if (res.locals.user.friends.includes(recipient) || 
+  res.locals.user.subscribers.includes(recipient) || 
+  res.locals.user.subscriptions.includes(recipient)) category = 'main';
 
   if (conversationId===null){
     //first message
-    conversationModel.create({members:[sender,recipient]})
-    .then(newConveration=>{
-      conversationId = newConveration._id;
+    conversationModel.create({members:[sender,recipient],category})
+    .then(newConversation=>{
+      conversationId = newConversation._id;
       messageModel.create({ conversationId, sender, content,contentType }).then(
         async (savedMessage) => {
           await conversationModel
@@ -88,7 +92,17 @@ module.exports.fetchMessages = async (req, res) => {
       .populate("messages")
       .sort({ createdAt: -1 })
       .limit(10);
-    res.status(200).json(messages);
+      if (messages!==null){messages.newMessage = messages.newMessage.map(elt=>{
+        if (String(elt.user)==String(res.locals.user._id)) return {...elt,new : 0};
+        else return elt;
+      });
+      messages.save();
+      res.status(200).json({messages});
+    }
+      else {
+        const user = await UserModel.findById(req.params.user,'name job picture')
+        res.status(200).json({user});
+      }
   } catch (err) {
       console.log("message fetching failed" + req.params.user + "---" + err.message);
       res.status(500).send("message fetching failed");

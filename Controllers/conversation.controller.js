@@ -1,10 +1,10 @@
 const conversationModel = require("../Models/conversation.model");
 
-module.exports.fetchConversation = async (req, res) => {
+module.exports.fetchMainConversation = async (req, res) => {
   conversationModel
-    .find({ members: { $in: [res.locals.user._id] } })
+    .find({$and:[{ members: { $in: [res.locals.user._id] } },{category:'main'}]})
     .sort({ updatedAt: -1 })
-    .limit(15)
+    // .limit(15)
     .populate("members", "name picture job")
     .populate({
       path: "messages",
@@ -12,12 +12,8 @@ module.exports.fetchConversation = async (req, res) => {
       options: { sort: { createdAt: -1 } },
     })
     .then(
-      (docs) => {
-        const friendsConv = docs.filter(conv=>{
-          const userB = conv.members.filter(i=>String(i._id)!=String(res.locals.user._id))[0]._id;
-          return (res.locals.user.friends.includes(userB) || res.locals.user.subscribers.includes(userB));
-        })
-        res.status(200).json(friendsConv)},
+      (docs) => 
+        res.status(200).json(docs),
       (err) => {
         console.log(
           "friend conversations not found for user" + req.locals.user._id + "---" + err
@@ -27,11 +23,11 @@ module.exports.fetchConversation = async (req, res) => {
     );
 };
 
-module.exports.fetchStrangersConversation = async (req, res) => {
+module.exports.fetchSecondConversation = async (req, res) => {
   conversationModel
-    .find({ members: { $in: [res.locals.user._id] } })
+    .find({$and:[{ members: { $in: [res.locals.user._id] } },{category:'second'}]})
     .sort({ updatedAt: -1 })
-    .limit(15)
+    // .limit(15)
     .populate("members", "name picture job")
     .populate({
       path: "messages",
@@ -39,12 +35,8 @@ module.exports.fetchStrangersConversation = async (req, res) => {
       options: { sort: { createdAt: -1 } },
     })
     .then(
-      (docs) => {
-        const strangersConv = docs.filter(conv=>{
-          const userB = conv.members.filter(i=>String(i._id)!=String(res.locals.user._id))[0]._id;
-          return (!res.locals.user.friends.includes(userB) && !res.locals.user.subscribers.includes(userB));
-        })
-        res.status(200).json(strangersConv)},
+      (docs) =>
+        res.status(200).json(docs),
       (err) => {
         console.log(
           "stranger conversations not found for user" + res.locals.user._id + "---" + err

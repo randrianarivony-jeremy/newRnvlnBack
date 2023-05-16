@@ -50,7 +50,6 @@ app.use("/api/conversation", checkUser,conversationRoutes);
 app.use("/api/notification", checkUser,notifRoutes);
 // app.use('/api/input',suggestion);
 
-
 //server
 app.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`);
