@@ -421,7 +421,20 @@ module.exports.fetchFriends = (req, res) => {
     .select("friends")
     .populate("friends", "picture name job")
     .then(
-      (doc) => res.status(200).send(doc.followers),
+      (doc) => res.status(200).send(doc.friends),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
+};
+
+module.exports.fetchFriendRequests = (req, res) => {
+  UserModel.findById(req.params.id)
+    .select("friendRequest")
+    .populate("friendRequest", "picture name job")
+    .then(
+      (doc) => res.status(200).send(doc.friendRequest),
       (err) => {
         console.log(err);
         res.status(500).send("user not found:" + req.params.id);
@@ -437,7 +450,7 @@ module.exports.fetchSubscribers = (req, res) => {
       (doc) => res.status(200).send(doc.subscribers),
       (err) => {
         console.log(err);
-        res.status(500).send("user not found:" + req.params.id);
+        res.status(501).send("user not found here:" + req.params.id);
       }
     );
 };

@@ -8,9 +8,10 @@ router.delete('/:id', userController.deleteUser);
 
 //Relation
 router.get("/friends/:id", userController.fetchFriends);
-// router.get("/followings/:id", userController.fetchFollowings);
+router.get("/requests/:id", userController.fetchFriendRequests);
 router.get("/subscribers/:id", userController.fetchSubscribers);
 router.get("/subscriptions/:id", userController.fetchSubscriptions);
+
 router.patch('/subscribe/:id', userController.subscribe);
 router.patch('/unsubscribe/:id', userController.unsubscribe);
 router.patch('/friend_invitation', userController.inviteToBeFriends);

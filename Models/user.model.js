@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxLength: 200,
     },
+    project: {
+      type: String,
+      max: 200,
+      default: "",
+    },
     job: {
       type: String,
       max: 30,

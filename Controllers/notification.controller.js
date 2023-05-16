@@ -15,7 +15,7 @@ module.exports.fetchUserNotification = async(req,res)=>{
         const commentNotification = await notificationModel.find({$and: [{to:res.locals.user._id},{action:'comment'}]})
         .populate('on', 'comments')
         .populate('from','name job picture')
-        const relationNotification = await notificationModel.find({$and: [{to:res.locals.user._id},{$or: [{action:'follow'},{action:'subscribe'}]}]})
+        const relationNotification = await notificationModel.find({$and: [{to:res.locals.user._id},{$or: [{action:'friendRequest'},{action:'friendAccepted'},{action:'subscribe'}]}]})
         .populate('from','name job picture')
 
         const result = interviewsNotification.concat(likeNotification,commentNotification,relationNotification)
