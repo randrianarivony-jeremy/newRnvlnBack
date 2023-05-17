@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 // Creer un token valable pour 3jrs
-const maxAge = 3 * 24 * 60 * 5 * 1000; //3jrs en millisecondes
+const maxAge = 3 * 24 * 60 * 60 * 1000; //3jrs en millisecondes
 const createToken = (id,email,name) => {
   return jwt.sign({ id,email,name }, process.env.TOKEN_SECRET, {
     expiresIn: maxAge,
