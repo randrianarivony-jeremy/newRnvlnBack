@@ -28,7 +28,6 @@ module.exports.createPublication = async (req, res) => {
               on: interview._id,
             })
             .then((newNotification) => {
-              socket.emit('notification action',newNotification)
               questionDoc.interviewNotification = newNotification._id;
               questionDoc.save();
             });
