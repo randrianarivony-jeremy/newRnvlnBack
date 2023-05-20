@@ -1,13 +1,52 @@
-const publicationModel = require("../Models/publication.model");
+const interviewModel = require("../Models/interview.model");
 const questionModel = require("../Models/question.model");
 const notificationModel = require("../Models/notification.model");
 
 //CREATE
-module.exports.createPublication = async (req, res) => {
-  const {data,id_user,public} = req.body;
+module.exports.createInterview = async (req, res) => {
+  const { data, id_user, question, public } = req.body;
   try {
-    const publication = await publicationModel.create({data,id_user,public});
-    res.status(201).json(publication);
+    const interview = await interviewModel.create({
+      data,
+      id_user,
+      question,
+      public,
+    });
+
+    const questionDoc = await questionModel.findByIdAndUpdate(
+      question,
+      {
+        $push: { interviews: interview._id },
+      },
+      { new: true, select: "-interviews" }
+    );
+
+    //notification
+    if (questionDoc.interviewer != id_user) {
+      if (questionDoc.interviewNotification === null) {
+        //first interview
+        await notificationModel
+          .create({
+            action: "interview",
+            from: id_user,
+            to: questionDoc.interviewer,
+            on: interview._id,
+          })
+          .then((newNotification) => {
+            questionDoc.interviewNotification = newNotification._id;
+            questionDoc.save();
+          });
+      } else {
+        await notificationModel.findByIdAndUpdate(
+          questionDoc.interviewNotification,
+          {
+            $set: { from: id_user, on: interview._id },
+          }
+        );
+      }
+    }
+
+    res.status(201).json(interview);
   } catch (error) {
     res.status(500).send(error.message);
     console.log(error);
@@ -15,9 +54,9 @@ module.exports.createPublication = async (req, res) => {
 };
 
 //READ
-module.exports.readPublication = async (req, res) => {
+module.exports.readInterview = async (req, res) => {
   try {
-    const result = await publicationModel
+    const result = await interviewModel
       .findById(req.params.id)
       .populate("id_user", "name picture job")
       // .populate("question",'data bg')
@@ -35,24 +74,12 @@ module.exports.readPublication = async (req, res) => {
   }
 };
 
-//READ USER PUBLICATIONS
-module.exports.readUserPublications = async (req, res) => {
-  try {
-    const result = await publicationModel
-    .find({$and:[{id_user: req.params.id},{type:'article'}]  })
-    .select("id_user content contentType bg");
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
-};
-
 //READ USER INTERVIEWS
 module.exports.readUserInterviews = async (req, res) => {
   try {
-    const result = await publicationModel
-      .find({$and:[{id_user: req.params.id},{type:'interview'}]  })
-      .select("id_user content contentType bg");
+    const result = await interviewModel
+      .find({ id_user: req.params.id })
+      .select("id_user data");
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -60,42 +87,34 @@ module.exports.readUserInterviews = async (req, res) => {
 };
 
 //READ ALL
-module.exports.fetchPublications = async (req, res) => {
-  let publicPublications,privatePublications;
-  const fetchPublicPublications=async()=>{
-    publicPublications = await publicationModel
-    .find({public:true})
-    .populate("id_user", "name picture job")
-    .populate({
-      path: "question",strictPopulate:false,
-      populate: { path: "interviewer", select: "name picture job" },
-    });
-  }
-
-  const fetchPrivatePublications=async()=>{
-    privatePublications = await publicationModel
-    .find({$and:[{public:false},{$or:[{id_user:res.locals.user?.friends},{id_user:res.locals.user?._id},{id_user:res.locals.user?.subscriptions}]}]})
-    .populate("id_user", "name picture job")
-    .populate({
-      path: "question",strictPopulate:false,
-      populate: { path: "interviewer", select: "name picture job" },
-    });
-  }
-
-  Promise.all([fetchPublicPublications(),fetchPrivatePublications()])
-  .then(()=>{
-    const publications = publicPublications.concat(privatePublications).sort((a,b)=>b.createdAt-a.createdAt)
-    res.json(publications)})
-    .catch(err=>{
-      res.status(500).send('some error occurs');
-      console.log(err)
-    })
-};
+module.exports.fetchInterviews = (req, res) => {
+    interviewModel
+      .find({
+        $or: [
+          { public: true },
+          { id_user: res.locals.user?.friends },
+          { id_user: res.locals.user?._id },
+          { id_user: res.locals.user?.subscriptions },
+        ],
+      })
+      .populate("id_user", "name picture job")
+      .populate({
+        path: "question",
+        populate: { path: "interviewer", select: "name picture job" },
+      })
+      .then((result) => {
+        res.status(200).json(result);
+      })
+      .catch((err) => {
+        res.status(500).send("some error occurs");
+        console.log(err);
+      });
+  };
 
 // L O A D  N E W
 module.exports.loadNews = async (req, res) => {
   try {
-    await publicationModel
+    await interviewModel
       .find({ createdAt: { $gt: req.params.date } })
       .limit(1)
       .populate("likers", "name picture tag")
@@ -116,7 +135,7 @@ module.exports.loadNews = async (req, res) => {
 //READ OLD POST
 module.exports.loadMore = async (req, res) => {
   try {
-    await publicationModel
+    await interviewModel
       .find({ createdAt: { $lt: req.params.date } })
       .limit(1)
       .sort({ createdAt: -1 })
@@ -136,15 +155,15 @@ module.exports.loadMore = async (req, res) => {
 };
 
 //UPDATE
-module.exports.updatePublication = async (req, res) => {};
+module.exports.updateInterview = async (req, res) => {};
 
 //DELETE
-module.exports.deletePublication = async (req, res) => {};
+module.exports.deleteInterview = async (req, res) => {};
 
 // L I K E
-module.exports.likeOrNotPublication = async (req, res) => {
+module.exports.likeOrNotInterview = async (req, res) => {
   if (req.body.like) {
-    await publicationModel
+    await interviewModel
       .findByIdAndUpdate(
         req.params.id,
         { $push: { likers: req.body.id_user } },
@@ -164,7 +183,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   action: "like",
                   to: interview.id_user,
                   from: req.body.id_user,
-                  on: interview._id
+                  on: interview._id,
                 })
                 .then(
                   (newNotification) => {
@@ -194,13 +213,13 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 );
             } else {
               notificationModel
-              .findByIdAndUpdate(interview.likeNotification, {
-                $set: { from: req.body.id_user },
-              })
-              .then(
-                () => {
+                .findByIdAndUpdate(interview.likeNotification, {
+                  $set: { from: req.body.id_user },
+                })
+                .then(
+                  () => {
                     res.status(200).send("liking post success");
-                },
+                  },
                   (err) => {
                     console.log(
                       "notification updating failed for liking interview " +
@@ -225,7 +244,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
         }
       );
   } else {
-    publicationModel
+    interviewModel
       .findByIdAndUpdate(
         req.params.id,
         {
@@ -282,7 +301,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
 //F E T C H  C O M M E N T S
 module.exports.fetchComments = async (req, res) => {
   // console.log(res.locals.user)
-  await publicationModel
+  await interviewModel
     .findById(req.params.id, "comments")
     .populate({
       path: "comments",
@@ -301,8 +320,8 @@ module.exports.fetchComments = async (req, res) => {
 };
 
 //C O M M E N T
-module.exports.commentPublication = async (req, res) => {
-  await publicationModel
+module.exports.commentInterview = async (req, res) => {
+  await interviewModel
     .findByIdAndUpdate(
       req.params.id,
       {
@@ -395,7 +414,7 @@ module.exports.commentPublication = async (req, res) => {
 
 // D E L E T E  C O M M E N T
 module.exports.deleteCommentpost = async (req, res) => {
-  publicationModel
+  interviewModel
     .findByIdAndUpdate(
       req.params.id,
       {

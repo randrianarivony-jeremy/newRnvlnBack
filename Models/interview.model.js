@@ -1,16 +1,16 @@
 const mongoose = require("mongoose");
 const CommentSchema = require("./comments.model");
 
-const publicationSchema = new mongoose.Schema(
+const interviewSchema = new mongoose.Schema(
   {
     id_user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required:true
+      required: true,
     },
     type: {
         type:String,
-        default:'article'
+        default:'interview'
     },
     data: [
       {
@@ -20,31 +20,33 @@ const publicationSchema = new mongoose.Schema(
         description: { type: String, default: "", trim: true },
       },
     ],
-    public: {type:Boolean,default:false},
+    public: { type: Boolean, default: false },
+    question: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "question",
+      required: true,
+    },
     likers: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
       },
     ],
-    likeNotification: 
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "notification",
-        default:null
-      }
-    ,
+    likeNotification: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "notification",
+      default: null,
+    },
     comments: [CommentSchema],
-    commentNotification: 
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "notification",
-        default:null
-      }
+    commentNotification: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "notification",
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("publication", publicationSchema);
+module.exports = mongoose.model("interview", interviewSchema);
