@@ -5,7 +5,7 @@ const UserModel = require("../Models/user.model");
 //create conversation and message
 module.exports.createMessage = async (req, res) => {
   let { sender, recipient, content,contentType, conversationId } = req.body;
-  let category = 'second';
+  let category = 'second';  //matter of real time notification ui
   if (res.locals.user.friends.includes(recipient) || 
   res.locals.user.subscribers.includes(recipient) || 
   res.locals.user.subscriptions.includes(recipient)) category = 'main';

@@ -11,7 +11,14 @@ const NotifSchema = new mongoose.Schema(
     to: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
     on: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "publication"
+      refPath: "docModel"
+    },
+    docModel:{
+      type:String,
+      enum:['publication','interview'],
+      required:function(){
+        this.action === 'like' || 'comment';
+      }
     },
     seen:{
       type:Boolean,

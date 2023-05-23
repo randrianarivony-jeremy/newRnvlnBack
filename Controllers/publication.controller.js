@@ -20,15 +20,6 @@ module.exports.readPublication = async (req, res) => {
     const result = await publicationModel
       .findById(req.params.id)
       .populate("id_user", "name picture job")
-      // .populate("question",'data bg')
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture job" },
-      })
-      .populate({
-        path: "question",
-        populate: { path: "interviewer", select: "name picture job" },
-      });
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -39,20 +30,8 @@ module.exports.readPublication = async (req, res) => {
 module.exports.readUserPublications = async (req, res) => {
   try {
     const result = await publicationModel
-    .find({$and:[{id_user: req.params.id},{type:'article'}]  })
+    .find({id_user: req.params.id})
     .select("id_user content contentType bg");
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
-};
-
-//READ USER INTERVIEWS
-module.exports.readUserInterviews = async (req, res) => {
-  try {
-    const result = await publicationModel
-      .find({$and:[{id_user: req.params.id},{type:'interview'}]  })
-      .select("id_user content contentType bg");
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -68,7 +47,7 @@ module.exports.fetchPublications = async (req, res) => {
     .populate("id_user", "name picture job")
     .populate({
       path: "question",strictPopulate:false,
-      populate: { path: "interviewer", select: "name picture job" },
+      populate: { path: "publicationer", select: "name picture job" },
     });
   }
 
@@ -78,7 +57,7 @@ module.exports.fetchPublications = async (req, res) => {
     .populate("id_user", "name picture job")
     .populate({
       path: "question",strictPopulate:false,
-      populate: { path: "interviewer", select: "name picture job" },
+      populate: { path: "publicationer", select: "name picture job" },
     });
   }
 
@@ -151,29 +130,30 @@ module.exports.likeOrNotPublication = async (req, res) => {
         { new: true, select: "id_user likeNotification" }
       )
       .then(
-        async (interview) => {
+        async (publication) => {
           // notification
-          if (interview.id_user == req.body.id_user) {
+          if (publication.id_user == req.body.id_user) {
             //liking own post
             res.status(200).send("liking post success");
           } else {
-            if (interview.likeNotification === null) {
+            if (publication.likeNotification === null) {
               //first like
               notificationModel
                 .create({
                   action: "like",
-                  to: interview.id_user,
+                  to: publication.id_user,
                   from: req.body.id_user,
-                  on: interview._id
+                  on: publication._id,
+                  docModel:'publication'
                 })
                 .then(
                   (newNotification) => {
-                    interview.likeNotification = newNotification._id;
-                    interview.save().then(
+                    publication.likeNotification = newNotification._id;
+                    publication.save().then(
                       () => res.status(200).send("liking post success"),
                       (err) => {
                         console.log(
-                          "interview updating likenotification failed for liking interview " +
+                          "publication updating likenotification failed for liking publication " +
                             req.params.id +
                             "---" +
                             err
@@ -184,7 +164,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   },
                   (err) => {
                     console.log(
-                      "creating notification failed for liking interview " +
+                      "creating notification failed for liking publication " +
                         req.params.id +
                         "---" +
                         err
@@ -194,7 +174,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 );
             } else {
               notificationModel
-              .findByIdAndUpdate(interview.likeNotification, {
+              .findByIdAndUpdate(publication.likeNotification, {
                 $set: { from: req.body.id_user },
               })
               .then(
@@ -203,7 +183,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 },
                   (err) => {
                     console.log(
-                      "notification updating failed for liking interview " +
+                      "notification updating failed for liking publication " +
                         req.params.id +
                         "---" +
                         err
@@ -216,7 +196,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
         },
         (err) => {
           console.log(
-            "interview updating failed for liking interview " +
+            "publication updating failed for liking publication " +
               req.params.id +
               "---" +
               err
@@ -234,18 +214,18 @@ module.exports.likeOrNotPublication = async (req, res) => {
         { new: true, select: "likers likeNotification" }
       )
       .then(
-        (interview) => {
-          if (interview.likers.length === 0) {
+        (publication) => {
+          if (publication.likers.length === 0) {
             notificationModel
-              .findByIdAndDelete(interview.likeNotification)
+              .findByIdAndDelete(publication.likeNotification)
               .then(
                 () => {
-                  interview.likeNotification = null;
-                  interview.save().then(
-                    () => res.status(200).send("unliking interview done"),
+                  publication.likeNotification = null;
+                  publication.save().then(
+                    () => res.status(200).send("unliking publication done"),
                     (err) => {
                       console.log(
-                        "setting likenotification to null failed for unliking interview " +
+                        "setting likenotification to null failed for unliking publication " +
                           req.params.id +
                           "---" +
                           err
@@ -256,7 +236,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 },
                 (err) => {
                   console.log(
-                    "deleting notification failed for unliking interview " +
+                    "deleting notification failed for unliking publication " +
                       req.params.id +
                       "---" +
                       err
@@ -264,11 +244,11 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   res.status(500).send("unliking failed");
                 }
               );
-          } else res.status(200).send("unliking interview done");
+          } else res.status(200).send("unliking publication done");
         },
         (err) => {
           console.log(
-            "interview updating failed for unliking interview " +
+            "publication updating failed for unliking publication " +
               req.params.id +
               "---" +
               err
@@ -291,7 +271,7 @@ module.exports.fetchComments = async (req, res) => {
     .then((doc) => res.status(200).json(doc.comments))
     .catch((err) => {
       console.log(
-        "Fetching comments failed for interview " +
+        "Fetching comments failed for publication " +
           req.params.id +
           " --- " +
           err
@@ -320,29 +300,30 @@ module.exports.commentPublication = async (req, res) => {
       populate: { path: "commenterId", select: "name picture tag" },
     })
     .then(
-      async (interview) => {
+      async (publication) => {
         // notification
-        if (interview.id_user == req.body.commenterId) {
+        if (publication.id_user == req.body.commenterId) {
           //commenting own post
-          res.status(200).json(interview.comments);
+          res.status(200).json(publication.comments);
         } else {
-          if (interview.commentNotification === null) {
+          if (publication.commentNotification === null) {
             //first comment
             notificationModel
               .create({
                 action: "comment",
-                to: interview.id_user,
+                to: publication.id_user,
                 from: req.body.commenterId,
-                on: interview._id,
+                on: publication._id,
+                docModel:'publication'
               })
               .then(
                 (newNotification) => {
-                  interview.commentNotification = newNotification._id;
-                  interview.save().then(
-                    () => res.status(200).json(interview.comments),
+                  publication.commentNotification = newNotification._id;
+                  publication.save().then(
+                    () => res.status(200).json(publication.comments),
                     (err) => {
                       console.log(
-                        "interview updating commentnotification failed for liking interview " +
+                        "publication updating commentnotification failed for liking publication " +
                           req.params.id +
                           "---" +
                           err
@@ -353,7 +334,7 @@ module.exports.commentPublication = async (req, res) => {
                 },
                 (err) => {
                   console.log(
-                    "creating notification failed for commenting interview " +
+                    "creating notification failed for commenting publication " +
                       req.params.id +
                       "---" +
                       err
@@ -363,14 +344,14 @@ module.exports.commentPublication = async (req, res) => {
               );
           } else {
             notificationModel
-              .findByIdAndUpdate(interview.commentNotification, {
+              .findByIdAndUpdate(publication.commentNotification, {
                 $set: { from: req.body.commenterId },
               })
               .then(
-                () => res.status(200).json(interview.comments),
+                () => res.status(200).json(publication.comments),
                 (err) => {
                   console.log(
-                    "notification updating failed for commenting interview " +
+                    "notification updating failed for commenting publication " +
                       req.params.id +
                       "---" +
                       err
@@ -383,7 +364,7 @@ module.exports.commentPublication = async (req, res) => {
       },
       (err) => {
         console.log(
-          "pushing comment failed for commenting interview " +
+          "pushing comment failed for commenting publication " +
             req.params.id +
             "---" +
             err
@@ -408,18 +389,18 @@ module.exports.deleteCommentpost = async (req, res) => {
       populate: { path: "commenterId", select: "name picture tag" },
     })
     .then(
-      (interview) => {
-        if (interview.comments.length === 0) {
+      (publication) => {
+        if (publication.comments.length === 0) {
           notificationModel
-            .findByIdAndDelete(interview.commentNotification)
+            .findByIdAndDelete(publication.commentNotification)
             .then(
               () => {
-                interview.commentNotification = null;
-                interview.save().then(
-                  () => res.status(200).json(interview.comments),
+                publication.commentNotification = null;
+                publication.save().then(
+                  () => res.status(200).json(publication.comments),
                   (err) => {
                     console.log(
-                      "setting commentnotification to null failed for deleting comment interview " +
+                      "setting commentnotification to null failed for deleting comment publication " +
                         req.params.id +
                         "---" +
                         err
@@ -430,7 +411,7 @@ module.exports.deleteCommentpost = async (req, res) => {
               },
               (err) => {
                 console.log(
-                  "deleting notification failed for deletecomment interview " +
+                  "deleting notification failed for deletecomment publication " +
                     req.params.id +
                     "---" +
                     err
@@ -438,11 +419,11 @@ module.exports.deleteCommentpost = async (req, res) => {
                 res.status(500).send("deleting comment failed");
               }
             );
-        } else res.status(200).json(interview.comments);
+        } else res.status(200).json(publication.comments);
       },
       (err) => {
         console.log(
-          "interview updating failed for deleting comment interview " +
+          "publication updating failed for deleting comment publication " +
             req.params.id +
             "---" +
             err

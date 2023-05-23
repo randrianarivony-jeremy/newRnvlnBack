@@ -59,11 +59,6 @@ module.exports.readInterview = async (req, res) => {
     const result = await interviewModel
       .findById(req.params.id)
       .populate("id_user", "name picture job")
-      // .populate("question",'data bg')
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture job" },
-      })
       .populate({
         path: "question",
         populate: { path: "interviewer", select: "name picture job" },
@@ -88,28 +83,28 @@ module.exports.readUserInterviews = async (req, res) => {
 
 //READ ALL
 module.exports.fetchInterviews = (req, res) => {
-    interviewModel
-      .find({
-        $or: [
-          { public: true },
-          { id_user: res.locals.user?.friends },
-          { id_user: res.locals.user?._id },
-          { id_user: res.locals.user?.subscriptions },
-        ],
-      })
-      .populate("id_user", "name picture job")
-      .populate({
-        path: "question",
-        populate: { path: "interviewer", select: "name picture job" },
-      })
-      .then((result) => {
-        res.status(200).json(result);
-      })
-      .catch((err) => {
-        res.status(500).send("some error occurs");
-        console.log(err);
-      });
-  };
+  interviewModel
+    .find({
+      $or: [
+        { public: true },
+        { id_user: res.locals.user?.friends },
+        { id_user: res.locals.user?._id },
+        { id_user: res.locals.user?.subscriptions },
+      ],
+    })
+    .populate("id_user", "name picture job")
+    .populate({
+      path: "question",
+      populate: { path: "interviewer", select: "name picture job" },
+    })
+    .then((result) => {
+      res.status(200).json(result);
+    })
+    .catch((err) => {
+      res.status(500).send("some error occurs");
+      console.log(err);
+    });
+};
 
 // L O A D  N E W
 module.exports.loadNews = async (req, res) => {
@@ -136,17 +131,14 @@ module.exports.loadNews = async (req, res) => {
 module.exports.loadMore = async (req, res) => {
   try {
     await interviewModel
-      .find({ createdAt: { $lt: req.params.date } })
+      .find({ createdAt: { $gt: req.params.date } })
       .limit(1)
       .sort({ createdAt: -1 })
       .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
-      .populate("project", "name picture tag")
-      .populate("savings", "name picture tag")
-      .populate("meToo", "name picture tag")
       .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture tag" },
+        path: "question",
+        populate: { path: "interviewer", select: "name picture tag" },
       })
       .then((doc) => res.send(doc));
   } catch (error) {
@@ -184,6 +176,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
                   to: interview.id_user,
                   from: req.body.id_user,
                   on: interview._id,
+                  docModel: "interview",
                 })
                 .then(
                   (newNotification) => {
@@ -203,7 +196,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
                   },
                   (err) => {
                     console.log(
-                      "creating notification failed for liking interview " +
+                      "creating a notification failed for liking interview " +
                         req.params.id +
                         "---" +
                         err
@@ -353,6 +346,7 @@ module.exports.commentInterview = async (req, res) => {
                 to: interview.id_user,
                 from: req.body.commenterId,
                 on: interview._id,
+                docModel: "interview",
               })
               .then(
                 (newNotification) => {

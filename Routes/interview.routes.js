@@ -5,7 +5,7 @@ const interviewControler = require('../Controllers/interview.controller')
 router.post('/', interviewControler.createInterview);
 
 //READ
-router.get('/interview/user/:id', interviewControler.readUserInterviews);
+router.get('/user/:id', interviewControler.readUserInterviews);
 router.get('/comments/:id', interviewControler.fetchComments);
 router.get('/:id', interviewControler.readInterview);
 router.get('/load-more/:date', interviewControler.loadMore);
