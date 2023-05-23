@@ -18,8 +18,8 @@ module.exports.fetchHomeFeeds = (req, res) => {
           },
         ],
       })
-      .sort({ createdAt: -1 })
-      .limit(1)
+      .sort({ $natural: -1 })
+      .limit(2)
       .populate("id_user", "name picture job"),
     interviewModel
       .find({
@@ -35,30 +35,17 @@ module.exports.fetchHomeFeeds = (req, res) => {
           },
         ],
       })
-      .limit(1)
-      .populate("id_user", "name picture job"),
-    questionModel
-      .find({ createdAt: { $lt: req.params.question_date } })
-      // .limit(1)
-      .select("-interviewNotification")
-      .populate("interviewer", "name picture job"),
+      .sort({ $natural: -1 })
+      .limit(2)
+      .populate("id_user", "name picture job")
+      .populate({
+        path: "question",
+        populate: { path: "interviewer", select: "name picture tag" },
+      }),
   ])
     .then((docs) => {
-      const interviews = docs[1].map((data) => {
-        data.question = docs[2].find(
-          (question) => String(question._id) == String(data.question)
-        );
-        data.question = {
-          _id: data.question._id,
-          data: data.question.data,
-          interviewer: data.question.interviewer,
-        };
-        return data;
-      });
       res.json(
-        docs[0]
-          .concat(interviews, docs[2])
-          .sort((a, b) => b.createdAt - a.createdAt)
+        docs[0].concat(docs[1]).sort((a, b) => b.createdAt - a.createdAt)
       );
     })
     .catch((err) => {
