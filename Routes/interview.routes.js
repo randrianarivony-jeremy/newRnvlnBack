@@ -8,8 +8,7 @@ router.post('/', interviewControler.createInterview);
 router.get('/user/:id', interviewControler.readUserInterviews);
 router.get('/comments/:id', interviewControler.fetchComments);
 router.get('/:id', interviewControler.readInterview);
-router.get('/load-more/:date', interviewControler.loadMore);
-router.get('/load-news/:date', interviewControler.loadNews);
+router.get("/load-more/:date", interviewControler.loadMore);
 router.get('/', interviewControler.fetchInterviews);
 
 //REACTION

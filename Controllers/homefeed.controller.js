@@ -6,16 +6,11 @@ module.exports.fetchHomeFeeds = (req, res) => {
   Promise.all([
     publicationModel
       .find({
-        $and: [
-          { createdAt: { $lt: req.params.publication_date } },
-          {
-            $or: [
-              { public: true },
-              { id_user: res.locals.user?.friends },
-              { id_user: res.locals.user?._id },
-              { id_user: res.locals.user?.subscriptions },
-            ],
-          },
+        $or: [
+          { public: true },
+          { id_user: res.locals.user?.friends },
+          { id_user: res.locals.user?._id },
+          { id_user: res.locals.user?.subscriptions },
         ],
       })
       .sort({ $natural: -1 })
@@ -23,16 +18,11 @@ module.exports.fetchHomeFeeds = (req, res) => {
       .populate("id_user", "name picture job"),
     interviewModel
       .find({
-        $and: [
-          { createdAt: { $lt: req.params.interview_date } },
-          {
-            $or: [
-              { public: true },
-              { id_user: res.locals.user?.friends },
-              { id_user: res.locals.user?._id },
-              { id_user: res.locals.user?.subscriptions },
-            ],
-          },
+        $or: [
+          { public: true },
+          { id_user: res.locals.user?.friends },
+          { id_user: res.locals.user?._id },
+          { id_user: res.locals.user?.subscriptions },
         ],
       })
       .sort({ $natural: -1 })
@@ -40,7 +30,7 @@ module.exports.fetchHomeFeeds = (req, res) => {
       .populate("id_user", "name picture job")
       .populate({
         path: "question",
-        populate: { path: "interviewer", select: "name picture tag" },
+        populate: { path: "interviewer", select: "name picture job" },
       }),
   ])
     .then((docs) => {

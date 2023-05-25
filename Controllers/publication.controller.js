@@ -40,74 +40,45 @@ module.exports.readUserPublications = async (req, res) => {
 
 //READ ALL
 module.exports.fetchPublications = async (req, res) => {
-  let publicPublications,privatePublications;
-  const fetchPublicPublications=async()=>{
-    publicPublications = await publicationModel
-    .find({public:true})
-    .populate("id_user", "name picture job")
-    .populate({
-      path: "question",strictPopulate:false,
-      populate: { path: "publicationer", select: "name picture job" },
-    });
-  }
-
-  const fetchPrivatePublications=async()=>{
-    privatePublications = await publicationModel
-    .find({$and:[{public:false},{$or:[{id_user:res.locals.user?.friends},{id_user:res.locals.user?._id},{id_user:res.locals.user?.subscriptions}]}]})
-    .populate("id_user", "name picture job")
-    .populate({
-      path: "question",strictPopulate:false,
-      populate: { path: "publicationer", select: "name picture job" },
-    });
-  }
-
-  Promise.all([fetchPublicPublications(),fetchPrivatePublications()])
-  .then(()=>{
-    const publications = publicPublications.concat(privatePublications).sort((a,b)=>b.createdAt-a.createdAt)
-    res.json(publications)})
-    .catch(err=>{
-      res.status(500).send('some error occurs');
-      console.log(err)
+  await publicationModel
+    .find({
+      $or: [
+        { public: true },
+        { id_user: res.locals.user?.friends },
+        { id_user: res.locals.user?._id },
+        { id_user: res.locals.user?.subscriptions },
+      ],
     })
+    .populate("id_user", "name picture job")
+    .then((docs) => {
+      res.json(docs);
+    })
+    .catch((err) => {
+      res.status(500).send("some error occurs while fetching publications");
+      console.log(err);
+    });
 };
 
-// L O A D  N E W
-module.exports.loadNews = async (req, res) => {
-  try {
-    await publicationModel
-      .find({ createdAt: { $gt: req.params.date } })
-      .limit(1)
-      .populate("likers", "name picture tag")
-      .populate("id_user", "name picture tag")
-      .populate("project", "name picture tag")
-      .populate("savings", "name picture tag")
-      .populate("meToo", "name picture tag")
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture tag" },
-      })
-      .then((doc) => res.send(doc));
-  } catch (error) {
-    res.send(error.message);
-  }
-};
-
-//READ OLD POST
+//LOAD OLD POST
 module.exports.loadMore = async (req, res) => {
   try {
     await publicationModel
-      .find({ createdAt: { $lt: req.params.date } })
+      .find({
+        $and: [
+          { createdAt: { $lt: req.params.date } },
+          {
+            $or: [
+              { public: true },
+              { id_user: res.locals.user?.friends },
+              { id_user: res.locals.user?._id },
+              { id_user: res.locals.user?.subscriptions },
+            ],
+          },
+        ],
+      })
       .limit(1)
       .sort({ createdAt: -1 })
-      .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
-      .populate("project", "name picture tag")
-      .populate("savings", "name picture tag")
-      .populate("meToo", "name picture tag")
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture tag" },
-      })
       .then((doc) => res.send(doc));
   } catch (error) {
     res.send(error.message);

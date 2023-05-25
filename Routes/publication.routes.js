@@ -8,8 +8,7 @@ router.post('/', publicationControler.createPublication);
 router.get('/user/:id', publicationControler.readUserPublications);
 router.get('/comments/:id', publicationControler.fetchComments);
 router.get('/:id', publicationControler.readPublication);
-router.get('/load-more/:date', publicationControler.loadMore);
-router.get('/load-news/:date', publicationControler.loadNews);
+router.get("/load-more/:date", publicationControler.loadMore);
 router.get('/', publicationControler.fetchPublications);
 
 //REACTION

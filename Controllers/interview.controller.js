@@ -106,39 +106,29 @@ module.exports.fetchInterviews = (req, res) => {
     });
 };
 
-// L O A D  N E W
-module.exports.loadNews = async (req, res) => {
-  try {
-    await interviewModel
-      .find({ createdAt: { $gt: req.params.date } })
-      .limit(1)
-      .populate("likers", "name picture tag")
-      .populate("id_user", "name picture tag")
-      .populate("project", "name picture tag")
-      .populate("savings", "name picture tag")
-      .populate("meToo", "name picture tag")
-      .populate({
-        path: "comments",
-        populate: { path: "commenterId", select: "name picture tag" },
-      })
-      .then((doc) => res.send(doc));
-  } catch (error) {
-    res.send(error.message);
-  }
-};
-
-//READ OLD POST
+//L O A D  OLD POST
 module.exports.loadMore = async (req, res) => {
   try {
     await interviewModel
-      .find({ createdAt: { $gt: req.params.date } })
+      .find({
+        $and: [
+          { createdAt: { $lt: req.params.date } },
+          {
+            $or: [
+              { public: true },
+              { id_user: res.locals.user?.friends },
+              { id_user: res.locals.user?._id },
+              { id_user: res.locals.user?.subscriptions },
+            ],
+          },
+        ],
+      })
       .limit(1)
       .sort({ createdAt: -1 })
-      .populate("likers", "name picture tag")
       .populate("id_user", "name picture tag")
       .populate({
         path: "question",
-        populate: { path: "interviewer", select: "name picture tag" },
+        populate: { path: "interviewer", select: "name picture job" },
       })
       .then((doc) => res.send(doc));
   } catch (error) {
