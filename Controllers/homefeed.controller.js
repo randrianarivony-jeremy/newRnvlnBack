@@ -1,47 +1,67 @@
 const publicationModel = require("../Models/publication.model");
 const interviewModel = require("../Models/interview.model");
-const questionModel = require("../Models/question.model");
 
-module.exports.fetchHomeFeeds = (req, res) => {
-  Promise.all([
-    publicationModel
-      .find({
-        $or: [
-          { public: true },
-          { id_user: res.locals.user?.friends },
-          { id_user: res.locals.user?._id },
-          { id_user: res.locals.user?.subscriptions },
-        ],
-      })
-      .sort({ $natural: -1 })
-      .limit(2)
-      .populate("id_user", "name picture job"),
-    interviewModel
-      .find({
-        $or: [
-          { public: true },
-          { id_user: res.locals.user?.friends },
-          { id_user: res.locals.user?._id },
-          { id_user: res.locals.user?.subscriptions },
-        ],
-      })
-      .sort({ $natural: -1 })
-      .limit(2)
-      .populate("id_user", "name picture job")
-      .populate({
-        path: "question",
-        populate: { path: "interviewer", select: "name picture job" },
-      }),
-  ])
-    .then((docs) => {
-      res.json(
-        docs[0].concat(docs[1]).sort((a, b) => b.createdAt - a.createdAt)
-      );
-    })
-    .catch((err) => {
-      res.status(500).send("some error occurs");
-      console.log(err);
-    });
+module.exports.fetchHomeFeeds = async (req, res) => {
+  let nbOfDay = 86400000;
+  let result = [];
+  try {
+    while (result.length === 0) {
+      const data = await Promise.all([
+        publicationModel
+          .find({
+            $and: [
+              {
+                createdAt: {
+                  $lt: req.params.date,
+                  $gt: req.params.date - nbOfDay,
+                },
+              },
+              {
+                $or: [
+                  { public: true },
+                  { id_user: res.locals.user?.friends },
+                  { id_user: res.locals.user?._id },
+                  { id_user: res.locals.user?.subscriptions },
+                ],
+              },
+            ],
+          })
+          .sort({ $natural: -1 })
+          .populate("id_user", "name picture job"),
+        interviewModel
+          .find({
+            $and: [
+              {
+                createdAt: {
+                  $lt: req.params.date,
+                  $gt: req.params.date - nbOfDay,
+                },
+              },
+              {
+                $or: [
+                  { public: true },
+                  { id_user: res.locals.user?.friends },
+                  { id_user: res.locals.user?._id },
+                  { id_user: res.locals.user?.subscriptions },
+                ],
+              },
+            ],
+          })
+          .sort({ $natural: -1 })
+          .populate("id_user", "name picture job")
+          .populate({
+            path: "question",
+            populate: { path: "interviewer", select: "name picture job" },
+          }),
+      ]);
+      result = data[0].concat(data[1]);
+      nbOfDay += 86400000;
+    }
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send("some error occurs");
+    console.log(error);
+  }
 };
 
 //READ OLD POST
