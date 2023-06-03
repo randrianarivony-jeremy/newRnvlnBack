@@ -105,7 +105,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
           // notification
           if (publication.id_user == req.body.id_user) {
             //liking own post
-            res.status(200).send("liking post success");
+            res.status(200).send({Success:"liking post success"});
           } else {
             if (publication.likeNotification === null) {
               //first like
@@ -121,7 +121,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   (newNotification) => {
                     publication.likeNotification = newNotification._id;
                     publication.save().then(
-                      () => res.status(200).send("liking post success"),
+                      () => res.status(200).send({Success:"liking post success"}),
                       (err) => {
                         console.log(
                           "publication updating likenotification failed for liking publication " +
@@ -150,7 +150,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
               })
               .then(
                 () => {
-                    res.status(200).send("liking post success");
+                    res.status(200).send({Success:"liking post success"});
                 },
                   (err) => {
                     console.log(
@@ -193,7 +193,10 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 () => {
                   publication.likeNotification = null;
                   publication.save().then(
-                    () => res.status(200).send("unliking publication done"),
+                    () =>
+                      res
+                        .status(200)
+                        .send({ Success: "unliking publication done" }),
                     (err) => {
                       console.log(
                         "setting likenotification to null failed for unliking publication " +
@@ -215,7 +218,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   res.status(500).send("unliking failed");
                 }
               );
-          } else res.status(200).send("unliking publication done");
+          } else res.status(200).send({ Success: "unliking publication done" });
         },
         (err) => {
           console.log(

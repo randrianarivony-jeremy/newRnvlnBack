@@ -156,7 +156,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
           // notification
           if (interview.id_user == req.body.id_user) {
             //liking own post
-            res.status(200).send("liking post success");
+            res.status(200).send({ Success: "liking post success" });
           } else {
             if (interview.likeNotification === null) {
               //first like
@@ -172,7 +172,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
                   (newNotification) => {
                     interview.likeNotification = newNotification._id;
                     interview.save().then(
-                      () => res.status(200).send("liking post success"),
+                      () => res.status(200).send({Success:"liking post success"}),
                       (err) => {
                         console.log(
                           "interview updating likenotification failed for liking interview " +
@@ -201,7 +201,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
                 })
                 .then(
                   () => {
-                    res.status(200).send("liking post success");
+                    res.status(200).send({Success:"liking post success"});
                   },
                   (err) => {
                     console.log(
@@ -244,7 +244,10 @@ module.exports.likeOrNotInterview = async (req, res) => {
                 () => {
                   interview.likeNotification = null;
                   interview.save().then(
-                    () => res.status(200).send("unliking interview done"),
+                    () =>
+                      res
+                        .status(200)
+                        .send({ Success: "unliking interview done" }),
                     (err) => {
                       console.log(
                         "setting likenotification to null failed for unliking interview " +
@@ -266,7 +269,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
                   res.status(500).send("unliking failed");
                 }
               );
-          } else res.status(200).send("unliking interview done");
+          } else res.status(200).send({ Success: "unliking interview done" });
         },
         (err) => {
           console.log(
