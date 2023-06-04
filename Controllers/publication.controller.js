@@ -30,8 +30,8 @@ module.exports.readPublication = async (req, res) => {
 module.exports.readUserPublications = async (req, res) => {
   try {
     const result = await publicationModel
-    .find({id_user: req.params.id})
-    .select("id_user content contentType bg");
+      .find({ id_user: req.params.id })
+      .select("id_user data type");
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -57,32 +57,6 @@ module.exports.fetchPublications = async (req, res) => {
       res.status(500).send("some error occurs while fetching publications");
       console.log(err);
     });
-};
-
-//LOAD OLD POST
-module.exports.loadMore = async (req, res) => {
-  try {
-    await publicationModel
-      .find({
-        $and: [
-          { createdAt: { $lt: req.params.date } },
-          {
-            $or: [
-              { public: true },
-              { id_user: res.locals.user?.friends },
-              { id_user: res.locals.user?._id },
-              { id_user: res.locals.user?.subscriptions },
-            ],
-          },
-        ],
-      })
-      .limit(1)
-      .sort({ createdAt: -1 })
-      .populate("id_user", "name picture tag")
-      .then((doc) => res.send(doc));
-  } catch (error) {
-    res.send(error.message);
-  }
 };
 
 //UPDATE

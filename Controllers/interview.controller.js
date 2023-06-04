@@ -74,7 +74,7 @@ module.exports.readUserInterviews = async (req, res) => {
   try {
     const result = await interviewModel
       .find({ id_user: req.params.id })
-      .select("id_user data");
+      .select("id_user data type");
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -104,36 +104,6 @@ module.exports.fetchInterviews = (req, res) => {
       res.status(500).send("some error occurs");
       console.log(err);
     });
-};
-
-//L O A D  OLD POST
-module.exports.loadMore = async (req, res) => {
-  try {
-    await interviewModel
-      .find({
-        $and: [
-          { createdAt: { $lt: req.params.date } },
-          {
-            $or: [
-              { public: true },
-              { id_user: res.locals.user?.friends },
-              { id_user: res.locals.user?._id },
-              { id_user: res.locals.user?.subscriptions },
-            ],
-          },
-        ],
-      })
-      .limit(1)
-      .sort({ createdAt: -1 })
-      .populate("id_user", "name picture tag")
-      .populate({
-        path: "question",
-        populate: { path: "interviewer", select: "name picture job" },
-      })
-      .then((doc) => res.send(doc));
-  } catch (error) {
-    res.send(error.message);
-  }
 };
 
 //UPDATE
