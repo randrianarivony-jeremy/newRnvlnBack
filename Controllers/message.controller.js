@@ -103,11 +103,7 @@ module.exports.fetchMessages = async (req, res) => {
       conversation.save();
       res.status(200).json(conversation.messages);
     } else {
-      const user = await UserModel.findById(
-        req.params.userId,
-        "name job picture"
-      );
-      res.status(200).json({ user });
+      res.status(200).json(conversation);
     }
   } catch (err) {
     console.log(
@@ -132,17 +128,39 @@ module.exports.fetchMessagesByConversationId = async (req, res) => {
   }
 };
 
-module.exports.deleteMessage=async(req,res)=>{
-  await messageModel.findByIdAndDelete(req.params.id)
-  .then(async(doc)=>{
-    await conversationModel.findByIdAndUpdate(req.params.conversationId,{
-      $pull: {messages: req.params.id}
-    }).then(()=>res.status(200).send(doc._id),err=>{
-      console.log("conversation message pulling failed" + req.params.id + "---" + err);
-      res.status(500).send("message deleting failed upon conversation model");
-    })
-  },err=>{
-    console.log("message deleting failed" + req.params.id + "---" + err);
+module.exports.deleteMessage = async (req, res) => {
+  await messageModel.findByIdAndDelete(req.params.id).then(
+    async (doc) => {
+      await conversationModel
+        .findByIdAndUpdate(
+          req.params.conversationId,
+          {
+            $pull: { messages: req.params.id },
+          },
+          { new: true }
+        )
+        .then(
+          async (conversation) => {
+            if (conversation.messages.length === 0)
+              await conversationModel.findByIdAndDelete(conversation._id);
+            res.status(200).send(doc._id);
+          },
+          (err) => {
+            console.log(
+              "conversation message pulling failed" +
+                req.params.id +
+                "---" +
+                err
+            );
+            res
+              .status(500)
+              .send("message deleting failed upon conversation model");
+          }
+        );
+    },
+    (err) => {
+      console.log("message deleting failed" + req.params.id + "---" + err);
       res.status(500).send("message deleting failed");
-  })
-}
+    }
+  );
+};

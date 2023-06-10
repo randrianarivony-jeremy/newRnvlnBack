@@ -16,7 +16,7 @@ const messageRoutes = require("./Routes/message.routes");
 const conversationRoutes = require("./Routes/conversation.routes");
 const notifRoutes = require("./Routes/notification.routes");
 const homefeedRoutes = require("./Routes/homefeeds.routes");
-// const chatRoutes = require("./routes/conversations");
+const queryController = require("./Controllers/query.controller");
 // const feedRoutes = require("./routes/feed.routes");
 // const suggestion = require ('./routes/suggestions');
 
@@ -30,11 +30,11 @@ app.use(cookieParser());
 const corsOptions = {
   origin: process.env.CLIENT_URL,
   credentials: true,
-  allowedHeaders: ['sessionId','Content-type'],
-  exposedHeaders: ['sessionId'],
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  preflightContinue: false
-}
+  allowedHeaders: ["sessionId", "Content-type"],
+  exposedHeaders: ["sessionId"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: false,
+};
 app.use(cors(corsOptions));
 
 // //jwt
@@ -43,15 +43,16 @@ app.get("/jwtid", checkUser, (req, res) => {
 });
 
 // //routes
-app.use("/api/auth",authRoutes);
-app.use("/api/user", checkUser,userRoutes);
-app.use('/api/question', checkUser,questionRoutes);
-app.use('/api/publication',checkUser,publicationRoutes);
-app.use('/api/interview',checkUser,interviewRoutes);
-app.use("/api/message", checkUser,messageRoutes);
-app.use("/api/conversation", checkUser,conversationRoutes);
-app.use("/api/notification", checkUser,notifRoutes);
-app.use('/api/feeds',checkUser,homefeedRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/user", checkUser, userRoutes);
+app.use("/api/question", checkUser, questionRoutes);
+app.use("/api/publication", checkUser, publicationRoutes);
+app.use("/api/interview", checkUser, interviewRoutes);
+app.use("/api/message", checkUser, messageRoutes);
+app.use("/api/conversation", checkUser, conversationRoutes);
+app.use("/api/notification", checkUser, notifRoutes);
+app.use("/api/feeds", checkUser, homefeedRoutes);
+app.use("/api/search", queryController);
 
 //server
 app.listen(process.env.PORT, () => {
