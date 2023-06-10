@@ -91,26 +91,44 @@ module.exports.createMessage = async (req, res) => {
 
 module.exports.fetchMessages = async (req, res) => {
   try {
-    const messages = await conversationModel.findOne(
-      {members: {$all:[req.params.user,res.locals.user._id]}})
-      .populate("members", "name picture job")
-      .populate("messages")
-      .sort({ createdAt: -1 })
-      .limit(10);
-      if (messages!==null){messages.unseenMessage = messages.unseenMessage.map(elt=>{
-        if (String(elt.user)==String(res.locals.user._id)) return {...elt,new : 0};
+    const conversation = await conversationModel
+      .findOne({ members: { $all: [req.params.userId, res.locals.user._id] } })
+      .populate("messages");
+    if (conversation !== null) {
+      conversation.unseenMessage = conversation.unseenMessage.map((elt) => {
+        if (String(elt.user) == String(res.locals.user._id))
+          return { ...elt, new: 0 };
         else return elt;
       });
-      messages.save();
-      res.status(200).json({messages});
+      conversation.save();
+      res.status(200).json(conversation.messages);
+    } else {
+      const user = await UserModel.findById(
+        req.params.userId,
+        "name job picture"
+      );
+      res.status(200).json({ user });
     }
-      else {
-        const user = await UserModel.findById(req.params.user,'name job picture')
-        res.status(200).json({user});
-      }
   } catch (err) {
-      console.log("message fetching failed" + req.params.user + "---" + err.message);
-      res.status(500).send("message fetching failed");
+    console.log(
+      "message fetching failed" + req.params.userId + "---" + err.message
+    );
+    res.status(500).send("message fetching failed");
+  }
+};
+
+module.exports.fetchMessagesByConversationId = async (req, res) => {
+  try {
+    const conversation = await conversationModel
+      .findById(req.params.conversationId, "messages")
+      .populate("messages")
+      .limit(20);
+    res.status(200).json(conversation.messages);
+  } catch (err) {
+    console.log(
+      "message fetching failed" + req.params.user + "---" + err.message
+    );
+    res.status(500).send("message fetching failed");
   }
 };
 

@@ -24,6 +24,19 @@ module.exports.userInfo = (req, res) => {
     );
 };
 
+// R E A D  U S E R  S P E C I F I C A L L Y
+module.exports.getBasicUserInfo = (req, res) => {
+  UserModel.findById(req.params.id)
+    .select('name picture job')
+    .then(
+      (doc) => res.status(200).send(doc),
+      (err) => {
+        console.log(err);
+        res.status(500).send("user not found:" + req.params.id);
+      }
+    );
+};
+
 // R E A D  C U R R E N T  U S E R
 module.exports.currentUser = (req, res) => {
   UserModel.findById(req.params.id)

@@ -1,5 +1,11 @@
 const conversationModel = require("../Models/conversation.model");
 
+module.exports.fetchConversationByUserId = async (req, res) => {
+  const conversation = await conversationModel.findOne({
+    members: { $all: [req.params.userId, res.locals.user._id] },
+  });
+  res.status(200).json(conversation);
+};
 module.exports.fetchMainConversation = async (req, res) => {
   conversationModel
     .find({
