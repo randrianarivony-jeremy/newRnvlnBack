@@ -638,7 +638,14 @@ module.exports.deleteUser = (req, res) => {
 // S E A R C H
 module.exports.searchUser = (req, res) => {
   UserModel.find(
-    { name: { $regex: req.query.query, $options: "i" } },
+    {
+      $and: [
+        { name: { $ne: res.locals.user.name } },
+        {
+          name: { $regex: req.query.query, $options: "i" },
+        },
+      ],
+    },
     "name picture job"
   )
     .then((result) => res.status(200).json(result))

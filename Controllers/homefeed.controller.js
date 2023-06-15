@@ -1,5 +1,6 @@
 const publicationModel = require("../Models/publication.model");
 const interviewModel = require("../Models/interview.model");
+const questionModel = require("../Models/question.model");
 
 module.exports.fetchHomeFeeds = async (req, res) => {
   const date = Date.now();
@@ -20,14 +21,14 @@ module.exports.fetchHomeFeeds = async (req, res) => {
               {
                 $or: [
                   { public: true },
-                  { id_user: res.locals.user?.friends },
-                  { id_user: res.locals.user?._id },
-                  { id_user: res.locals.user?.subscriptions },
+                  { id_user: res.locals.user.friends },
+                  { id_user: res.locals.user._id },
+                  { id_user: res.locals.user.subscriptions },
                 ],
               },
             ],
           })
-          .sort({ $natural: -1 })
+          // .sort({ $natural: -1 })
           .populate("id_user", "name picture job"),
         interviewModel
           .find({
@@ -41,21 +42,33 @@ module.exports.fetchHomeFeeds = async (req, res) => {
               {
                 $or: [
                   { public: true },
-                  { id_user: res.locals.user?.friends },
-                  { id_user: res.locals.user?._id },
-                  { id_user: res.locals.user?.subscriptions },
+                  { id_user: res.locals.user.friends },
+                  { id_user: res.locals.user._id },
+                  { id_user: res.locals.user.subscriptions },
                 ],
               },
             ],
           })
-          .sort({ $natural: -1 })
+          // .sort({ $natural: -1 })
           .populate("id_user", "name picture job")
           .populate({
             path: "question",
             populate: { path: "interviewer", select: "name picture job" },
           }),
+        questionModel
+          .find(
+            {
+              createdAt: {
+                $lt: date,
+                $gt: date - nbOfDay,
+              },
+            },
+            "-interviewNotification"
+          )
+          // .sort({ $natural: -1 })
+          .populate("interviewer", "name picture job"),
       ]);
-      result = data[0].concat(data[1]);
+      result = data[0].concat(data[1], data[2]);
       nbOfDay += 86400000;
     }
     res.status(200).json(result);
@@ -118,8 +131,20 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
             path: "question",
             populate: { path: "interviewer", select: "name picture job" },
           }),
+        questionModel
+          .find(
+            {
+              createdAt: {
+                $lt: date,
+                $gt: date - nbOfDay,
+              },
+            },
+            "-interviewNotification"
+          )
+          // .sort({ $natural: -1 })
+          .populate("interviewer", "name picture job"),
       ]);
-      result = data[0].concat(data[1]);
+      result = data[0].concat(data[1], data[2]);
       nbOfDay += 86400000;
     }
     res.status(200).json(result);

@@ -383,26 +383,27 @@ module.exports.deleteCommentpost = async (req, res) => {
 
 // S E A R C H
 module.exports.searchPublications = (req, res) => {
-  publicationModel.find(
-    {
+  publicationModel
+    .find({
       $and: [
         {
           $or: [
-            { 'data.content': { $regex: req.query.query, $options: "i" } },
-            { 'data.description': { $regex: req.query.query, $options: "i" } },
+            { "data.content": { $regex: req.query.query, $options: "i" } },
+            { "data.description": { $regex: req.query.query, $options: "i" } },
           ],
         },
         {
           $or: [
             { public: true },
-            { id_user: res.locals.user?.friends },
-            { id_user: res.locals.user?._id },
-            { id_user: res.locals.user?.subscriptions },
+            { id_user: res.locals.user.friends },
+            { id_user: res.locals.user._id },
+            { id_user: res.locals.user.subscriptions },
           ],
         },
       ],
-    }
-  )
+    })
     .then((result) => res.status(200).json(result))
-    .catch((err) => res.status(500).send("Error while querying publication :" + err));
+    .catch((err) =>
+      res.status(500).send("Error while querying publication :" + err)
+    );
 };

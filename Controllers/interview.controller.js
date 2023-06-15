@@ -69,6 +69,22 @@ module.exports.readInterview = async (req, res) => {
   }
 };
 
+//READ ALL
+module.exports.readQuestionInterviews = async(req,res)=>{
+  try {
+      const result = await interviewModel.find({question:req.params.questionId})
+      .populate("id_user", "name picture job")
+      .populate({
+        path: "question",
+        populate: { path: "interviewer", select: "name picture job" },
+      })
+      .sort({ $natural: -1 });
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).send(error.message);
+  }
+}
+
 //READ USER INTERVIEWS
 module.exports.readUserInterviews = async (req, res) => {
   try {
@@ -430,26 +446,27 @@ module.exports.deleteCommentpost = async (req, res) => {
 
 // S E A R C H
 module.exports.searchInterviews = (req, res) => {
-  interviewModel.find(
-    {
+  interviewModel
+    .find({
       $and: [
         {
           $or: [
-            { 'data.content': { $regex: req.query.query, $options: "i" } },
-            { 'data.description': { $regex: req.query.query, $options: "i" } },
+            { "data.content": { $regex: req.query.query, $options: "i" } },
+            { "data.description": { $regex: req.query.query, $options: "i" } },
           ],
         },
         {
           $or: [
             { public: true },
-            { id_user: res.locals.user?.friends },
-            { id_user: res.locals.user?._id },
-            { id_user: res.locals.user?.subscriptions },
+            { id_user: res.locals.user.friends },
+            { id_user: res.locals.user._id },
+            { id_user: res.locals.user.subscriptions },
           ],
         },
       ],
-    }
-  )
+    })
     .then((result) => res.status(200).json(result))
-    .catch((err) => res.status(500).send("Error while querying interview :" + err));
+    .catch((err) =>
+      res.status(500).send("Error while querying interview :" + err)
+    );
 };
