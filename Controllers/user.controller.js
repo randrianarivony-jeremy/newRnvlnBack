@@ -548,17 +548,6 @@ module.exports.updatePassword = async (req, res) => {
   });
 };
 
-// D E L E T E
-module.exports.deleteUser = (req, res) => {
-  if (!ObjectId.isValid(req.params.id))
-    return res.status(400).send("ID unknown : " + req.params.id);
-
-  UserModel.findByIdAndRemove(req.params.id, (err, docs) => {
-    if (!err) res.send(docs);
-    else console.log("Delete error : " + err);
-  });
-};
-
 // U P D A T E
 module.exports.changeProfilePicture = async (req, res) => {
   try {
@@ -633,4 +622,25 @@ module.exports.changePhilosophy = async (req, res) => {
   } catch (error) {
     console.log("Update error : " + error);
   }
+};
+
+// D E L E T E
+module.exports.deleteUser = (req, res) => {
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("ID unknown : " + req.params.id);
+
+  UserModel.findByIdAndRemove(req.params.id, (err, docs) => {
+    if (!err) res.send(docs);
+    else console.log("Delete error : " + err);
+  });
+};
+
+// S E A R C H
+module.exports.searchUser = (req, res) => {
+  UserModel.find(
+    { name: { $regex: req.query.query, $options: "i" } },
+    "name picture job"
+  )
+    .then((result) => res.status(200).json(result))
+    .catch((err) => res.status(500).send("Error while querying user :" + err));
 };

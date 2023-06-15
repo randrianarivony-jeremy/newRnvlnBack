@@ -16,7 +16,6 @@ const messageRoutes = require("./Routes/message.routes");
 const conversationRoutes = require("./Routes/conversation.routes");
 const notifRoutes = require("./Routes/notification.routes");
 const homefeedRoutes = require("./Routes/homefeeds.routes");
-const queryController = require("./Controllers/query.controller");
 // const feedRoutes = require("./routes/feed.routes");
 // const suggestion = require ('./routes/suggestions');
 
@@ -52,7 +51,6 @@ app.use("/api/message", checkUser, messageRoutes);
 app.use("/api/conversation", checkUser, conversationRoutes);
 app.use("/api/notification", checkUser, notifRoutes);
 app.use("/api/feeds", checkUser, homefeedRoutes);
-app.use("/api/search", queryController);
 
 //server
 app.listen(process.env.PORT, () => {

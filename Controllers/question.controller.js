@@ -47,10 +47,14 @@ module.exports.readUserQuestions = async(req,res)=>{
     }
 }
 
-//UPDATE
-module.exports.updateQuestion = async(req,res)=>{
-    
-}
+// S E A R C H
+module.exports.searchQuestions = (req, res) => {
+    questionModel.find(
+        { data: { $regex: req.query.query, $options: "i" } },
+    )
+      .then((result) => res.status(200).json(result))
+      .catch((err) => res.status(500).send("Error while querying question :" + err));
+  };
 
 //DELETE
 module.exports.deleteQuestion = async(req,res)=>{

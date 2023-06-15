@@ -7,6 +7,7 @@ router.post('/', interviewControler.createInterview);
 //READ
 router.get('/user/:id', interviewControler.readUserInterviews);
 router.get('/comments/:id', interviewControler.fetchComments);
+router.get("/search", interviewControler.searchInterviews);
 router.get("/:id", interviewControler.readInterview);
 router.get('/', interviewControler.fetchInterviews);
 

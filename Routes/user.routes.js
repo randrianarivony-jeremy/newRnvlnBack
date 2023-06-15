@@ -3,6 +3,7 @@ const userController = require('../Controllers/user.controller');
 
 //user display: 'block'
 router.get("/user/basic/:id", userController.getBasicUserInfo);
+router.get("/search", userController.searchUser);
 router.get('/user/:id', userController.userInfo);
 router.get('/:id', userController.currentUser);
 router.delete('/:id', userController.deleteUser);
