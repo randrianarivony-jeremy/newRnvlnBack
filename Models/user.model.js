@@ -83,17 +83,19 @@ const userSchema = new mongoose.Schema(
           ref: "user",
         },
       ],
-      validate: [function(val){
-        return val.length<2;
-      },"2 friends max"],
+      // validate: [function(val){
+      //   return val.length<2;
+      // },"2 friends max"],
     },
-    friendRequest: [  //incoming friend request <-
+    friendRequest: [
+      //incoming friend request <-
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
       },
     ],
-    friendInvitation: [ //asking to be friend ->
+    friendInvitation: [
+      //asking to be friend ->
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
