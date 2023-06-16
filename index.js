@@ -1,14 +1,16 @@
 const express = require("express");
-const app = express();
-require("dotenv").config({path:'./config/.env'});
-require("./config/db.js");
-const connectDB = require("./config/db.js");
 const cors = require("cors");
+const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
+require("dotenv").config({ path: "./config/.env" });
+require("./config/db.js");
+const app = express();
+const connectDB = require("./config/db.js");
+
 const userRoutes = require("./Routes/user.routes");
 const authRoutes = require("./Routes/authentication.routes");
 const bodyParser = require("body-parser");
-const { checkUser, requireAuth } = require("./config/auth.middleware");
-const cookieParser = require("cookie-parser");
+const { checkUser } = require("./config/auth.middleware");
 const questionRoutes = require("./Routes/question.routes");
 const publicationRoutes = require("./Routes/publication.routes");
 const interviewRoutes = require("./Routes/interview.routes");
@@ -16,8 +18,6 @@ const messageRoutes = require("./Routes/message.routes");
 const conversationRoutes = require("./Routes/conversation.routes");
 const notifRoutes = require("./Routes/notification.routes");
 const homefeedRoutes = require("./Routes/homefeeds.routes");
-// const feedRoutes = require("./routes/feed.routes");
-// const suggestion = require ('./routes/suggestions');
 
 connectDB();
 
@@ -25,6 +25,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(cookieParser());
+app.use(helmet());
 
 const corsOptions = {
   origin: process.env.CLIENT_URL,
