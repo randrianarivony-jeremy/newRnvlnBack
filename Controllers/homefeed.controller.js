@@ -97,9 +97,9 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
               {
                 $or: [
                   { public: true },
-                  { id_user: res.locals.user?.friends },
-                  { id_user: res.locals.user?._id },
-                  { id_user: res.locals.user?.subscriptions },
+                  { id_user: res.locals.user.friends },
+                  { id_user: res.locals.user._id },
+                  { id_user: res.locals.user.subscriptions },
                 ],
               },
             ],
@@ -118,9 +118,9 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
               {
                 $or: [
                   { public: true },
-                  { id_user: res.locals.user?.friends },
-                  { id_user: res.locals.user?._id },
-                  { id_user: res.locals.user?.subscriptions },
+                  { id_user: res.locals.user.friends },
+                  { id_user: res.locals.user._id },
+                  { id_user: res.locals.user.subscriptions },
                 ],
               },
             ],

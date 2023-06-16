@@ -63,7 +63,19 @@ module.exports.readInterview = async (req, res) => {
         path: "question",
         populate: { path: "interviewer", select: "name picture job" },
       });
-    res.status(200).json(result);
+        if (
+          result.public ||
+          String(res.locals.user._id) === String(result.id_user._id) ||
+          res.locals.user.friends.some(
+            (friend) => String(friend) === String(result.id_user._id)
+          ) ||
+          res.locals.user.subscriptions.some(
+            (subscription) =>
+              String(subscription) === String(result.id_user._id)
+          )
+        )
+          res.status(200).json(result);
+        else res.status(401).json({ Error: "Confidentiality issue" });
   } catch (error) {
     res.status(500).send(error.message);
   }
