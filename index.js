@@ -10,7 +10,7 @@ const connectDB = require("./config/db.js");
 const userRoutes = require("./Routes/user.routes");
 const authRoutes = require("./Routes/authentication.routes");
 const bodyParser = require("body-parser");
-const { checkUser } = require("./config/auth.middleware");
+const { checkUser, verifyJWT } = require("./config/auth.middleware");
 const questionRoutes = require("./Routes/question.routes");
 const publicationRoutes = require("./Routes/publication.routes");
 const interviewRoutes = require("./Routes/interview.routes");
@@ -30,10 +30,7 @@ app.use(helmet());
 const corsOptions = {
   origin: process.env.CLIENT_URL,
   credentials: true,
-  allowedHeaders: ["sessionId", "Content-type"],
-  exposedHeaders: ["sessionId"],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: false,
+  optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
@@ -51,7 +48,10 @@ app.use("/api/interview", checkUser, interviewRoutes);
 app.use("/api/message", checkUser, messageRoutes);
 app.use("/api/conversation", checkUser, conversationRoutes);
 app.use("/api/notification", checkUser, notifRoutes);
-app.use("/api/feeds", checkUser, homefeedRoutes);
+app.use("/api/feeds", verifyJWT, homefeedRoutes);
+app.all("*", (req, res) => {
+  res.status(404).json({ message: "404 Not Found" });
+});
 
 //server
 app.listen(process.env.PORT, () => {
