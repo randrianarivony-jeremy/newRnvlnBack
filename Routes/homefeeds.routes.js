@@ -4,7 +4,7 @@ const {
   fetchMoreHomeFeeds,
 } = require("../Controllers/homefeed.controller");
 
+router.get("/:date", fetchMoreHomeFeeds);
 router.get("/", fetchHomeFeeds);
-router.patch("/:date", fetchMoreHomeFeeds);
 
 module.exports = router;

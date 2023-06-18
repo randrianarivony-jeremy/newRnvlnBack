@@ -81,6 +81,7 @@ module.exports.fetchHomeFeeds = async (req, res) => {
 };
 
 module.exports.fetchMoreHomeFeeds = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id);
   const date = req.params.date;
   let nbOfDay = 86400000;
   let result = [];

@@ -1,6 +1,7 @@
 const interviewModel = require("../Models/interview.model");
 const questionModel = require("../Models/question.model");
 const notificationModel = require("../Models/notification.model");
+const UserModel = require("../Models/user.model");
 
 //CREATE
 module.exports.createInterview = async (req, res) => {
@@ -55,6 +56,7 @@ module.exports.createInterview = async (req, res) => {
 
 //READ
 module.exports.readInterview = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id);
   try {
     const result = await interviewModel
       .findById(req.params.id)
@@ -63,39 +65,39 @@ module.exports.readInterview = async (req, res) => {
         path: "question",
         populate: { path: "interviewer", select: "name picture job" },
       });
-        if (
-          result.public ||
-          String(res.locals.user._id) === String(result.id_user._id) ||
-          res.locals.user.friends.some(
-            (friend) => String(friend) === String(result.id_user._id)
-          ) ||
-          res.locals.user.subscriptions.some(
-            (subscription) =>
-              String(subscription) === String(result.id_user._id)
-          )
-        )
-          res.status(200).json(result);
-        else res.status(401).json({ Error: "Confidentiality issue" });
+    if (
+      result.public ||
+      String(req.id) === String(result.id_user._id) ||
+      currentUser.friends.some(
+        (friend) => String(friend) === String(result.id_user._id)
+      ) ||
+      currentUser.subscriptions.some(
+        (subscription) => String(subscription) === String(result.id_user._id)
+      )
+    )
+      res.status(200).json(result);
+    else res.status(401).json({ Error: "Confidentiality issue" });
   } catch (error) {
     res.status(500).send(error.message);
   }
 };
 
 //READ ALL
-module.exports.readQuestionInterviews = async(req,res)=>{
+module.exports.readQuestionInterviews = async (req, res) => {
   try {
-      const result = await interviewModel.find({question:req.params.questionId})
+    const result = await interviewModel
+      .find({ question: req.params.questionId })
       .populate("id_user", "name picture job")
       .populate({
         path: "question",
         populate: { path: "interviewer", select: "name picture job" },
       })
       .sort({ $natural: -1 });
-      res.status(200).json(result);
+    res.status(200).json(result);
   } catch (error) {
-      res.status(500).send(error.message);
+    res.status(500).send(error.message);
   }
-}
+};
 
 //READ USER INTERVIEWS
 module.exports.readUserInterviews = async (req, res) => {
@@ -110,14 +112,15 @@ module.exports.readUserInterviews = async (req, res) => {
 };
 
 //READ ALL
-module.exports.fetchInterviews = (req, res) => {
+module.exports.fetchInterviews = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id);
   interviewModel
     .find({
       $or: [
         { public: true },
-        { id_user: res.locals.user?.friends },
-        { id_user: res.locals.user?._id },
-        { id_user: res.locals.user?.subscriptions },
+        { id_user: currentUser.friends },
+        { id_user: req.id },
+        { id_user: currentUser.subscriptions },
       ],
     })
     .populate("id_user", "name picture job")
@@ -170,7 +173,10 @@ module.exports.likeOrNotInterview = async (req, res) => {
                   (newNotification) => {
                     interview.likeNotification = newNotification._id;
                     interview.save().then(
-                      () => res.status(200).send({Success:"liking post success"}),
+                      () =>
+                        res
+                          .status(200)
+                          .send({ Success: "liking post success" }),
                       (err) => {
                         console.log(
                           "interview updating likenotification failed for liking interview " +
@@ -199,7 +205,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
                 })
                 .then(
                   () => {
-                    res.status(200).send({Success:"liking post success"});
+                    res.status(200).send({ Success: "liking post success" });
                   },
                   (err) => {
                     console.log(
@@ -284,7 +290,7 @@ module.exports.likeOrNotInterview = async (req, res) => {
 
 //F E T C H  C O M M E N T S
 module.exports.fetchComments = async (req, res) => {
-  // console.log(res.locals.user)
+  // console.log(currentUser)
   await interviewModel
     .findById(req.params.id, "comments")
     .populate({
@@ -457,7 +463,8 @@ module.exports.deleteCommentpost = async (req, res) => {
 };
 
 // S E A R C H
-module.exports.searchInterviews = (req, res) => {
+module.exports.searchInterviews = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id);
   interviewModel
     .find({
       $and: [
@@ -470,9 +477,9 @@ module.exports.searchInterviews = (req, res) => {
         {
           $or: [
             { public: true },
-            { id_user: res.locals.user.friends },
-            { id_user: res.locals.user._id },
-            { id_user: res.locals.user.subscriptions },
+            { id_user: currentUser.friends },
+            { id_user: req.id },
+            { id_user: currentUser.subscriptions },
           ],
         },
       ],

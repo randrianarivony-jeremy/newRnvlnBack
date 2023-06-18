@@ -2,14 +2,14 @@ const conversationModel = require("../Models/conversation.model");
 
 module.exports.fetchConversationByUserId = async (req, res) => {
   const conversation = await conversationModel.findOne({
-    members: { $all: [req.params.userId, res.locals.user._id] },
+    members: { $all: [req.params.userId, req.id] },
   });
   res.status(200).json(conversation);
 };
 module.exports.fetchMainConversation = async (req, res) => {
   conversationModel
     .find({
-      $and: [{ members: { $in: [res.locals.user._id] } }, { category: "main" }],
+      $and: [{ members: { $in: [req.id] } }, { category: "main" }],
     })
     .sort({ updatedAt: -1 })
     // .limit(15)
@@ -23,8 +23,7 @@ module.exports.fetchMainConversation = async (req, res) => {
       (conversations) => {
         conversations.map((conv) => {
           conv.newMessage = conv.newMessage.map((elt) => {
-            if (String(elt.user) == String(res.locals.user._id))
-              return { ...elt, new: 0 };
+            if (String(elt.user) == String(req.id)) return { ...elt, new: 0 };
             else return elt;
           });
           conv.save();
@@ -46,10 +45,7 @@ module.exports.fetchMainConversation = async (req, res) => {
 module.exports.fetchSecondConversation = async (req, res) => {
   conversationModel
     .find({
-      $and: [
-        { members: { $in: [res.locals.user._id] } },
-        { category: "second" },
-      ],
+      $and: [{ members: { $in: [req.id] } }, { category: "second" }],
     })
     .sort({ updatedAt: -1 })
     // .limit(15)
@@ -63,8 +59,7 @@ module.exports.fetchSecondConversation = async (req, res) => {
       (conversations) => {
         conversations.map((conv) => {
           conv.newMessage = conv.newMessage.map((elt) => {
-            if (String(elt.user) == String(res.locals.user._id))
-              return { ...elt, new: 0 };
+            if (String(elt.user) == String(req.id)) return { ...elt, new: 0 };
             else return elt;
           });
           conv.save();
@@ -73,10 +68,7 @@ module.exports.fetchSecondConversation = async (req, res) => {
       },
       (err) => {
         console.log(
-          "stranger conversations not found for user" +
-            res.locals.user._id +
-            "---" +
-            err
+          "stranger conversations not found for user" + req.id + "---" + err
         );
         res.status(500).send("stranger conversation not found");
       }
@@ -84,20 +76,18 @@ module.exports.fetchSecondConversation = async (req, res) => {
 };
 
 module.exports.checkNewMessage = async (req, res) => {
-  conversationModel.find({ members: { $in: [res.locals.user._id] } }).then(
+  conversationModel.find({ members: { $in: [req.id] } }).then(
     (conversations) => {
       let newMainMessage = 0;
       let newSecondMessage = 0;
       conversations.map((conv) => {
         if (conv.category === "main") {
           conv.newMessage = conv.newMessage.map((elt) => {
-            if (String(elt.user) == String(res.locals.user._id))
-              newMainMessage += elt.new;
+            if (String(elt.user) == String(req.id)) newMainMessage += elt.new;
           });
         } else {
           conv.newMessage = conv.newMessage.map((elt) => {
-            if (String(elt.user) == String(res.locals.user._id))
-              newSecondMessage += elt.new;
+            if (String(elt.user) == String(req.id)) newSecondMessage += elt.new;
           });
         }
       });
@@ -106,11 +96,13 @@ module.exports.checkNewMessage = async (req, res) => {
     (err) => {
       console.log(
         "conversation not found for new message number checking for user" +
-          res.locals.user._id +
+          req.id +
           "---" +
           err
       );
-      res.status(500).send("conversation not found for new message number checking");
+      res
+        .status(500)
+        .send("conversation not found for new message number checking");
     }
   );
 };

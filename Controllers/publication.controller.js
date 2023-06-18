@@ -1,12 +1,17 @@
 const publicationModel = require("../Models/publication.model");
 const questionModel = require("../Models/question.model");
 const notificationModel = require("../Models/notification.model");
+const UserModel = require("../Models/user.model");
 
 //CREATE
 module.exports.createPublication = async (req, res) => {
-  const {data,id_user,public} = req.body;
+  const { data, id_user, public } = req.body;
   try {
-    const publication = await publicationModel.create({data,id_user,public});
+    const publication = await publicationModel.create({
+      data,
+      id_user,
+      public,
+    });
     res.status(201).json(publication);
   } catch (error) {
     res.status(500).send(error.message);
@@ -19,7 +24,7 @@ module.exports.readPublication = async (req, res) => {
   try {
     const result = await publicationModel
       .findById(req.params.id)
-      .populate("id_user", "name picture job")
+      .populate("id_user", "name picture job");
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
@@ -40,13 +45,14 @@ module.exports.readUserPublications = async (req, res) => {
 
 //READ ALL
 module.exports.fetchPublications = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id);
   await publicationModel
     .find({
       $or: [
         { public: true },
-        { id_user: res.locals.user?.friends },
-        { id_user: res.locals.user?._id },
-        { id_user: res.locals.user?.subscriptions },
+        { id_user: currentUser.friends },
+        { id_user: req.id },
+        { id_user: currentUser.subscriptions },
       ],
     })
     .populate("id_user", "name picture job")
@@ -79,7 +85,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
           // notification
           if (publication.id_user == req.body.id_user) {
             //liking own post
-            res.status(200).send({Success:"liking post success"});
+            res.status(200).send({ Success: "liking post success" });
           } else {
             if (publication.likeNotification === null) {
               //first like
@@ -89,13 +95,16 @@ module.exports.likeOrNotPublication = async (req, res) => {
                   to: publication.id_user,
                   from: req.body.id_user,
                   on: publication._id,
-                  docModel:'publication'
+                  docModel: "publication",
                 })
                 .then(
                   (newNotification) => {
                     publication.likeNotification = newNotification._id;
                     publication.save().then(
-                      () => res.status(200).send({Success:"liking post success"}),
+                      () =>
+                        res
+                          .status(200)
+                          .send({ Success: "liking post success" }),
                       (err) => {
                         console.log(
                           "publication updating likenotification failed for liking publication " +
@@ -119,13 +128,13 @@ module.exports.likeOrNotPublication = async (req, res) => {
                 );
             } else {
               notificationModel
-              .findByIdAndUpdate(publication.likeNotification, {
-                $set: { from: req.body.id_user },
-              })
-              .then(
-                () => {
-                    res.status(200).send({Success:"liking post success"});
-                },
+                .findByIdAndUpdate(publication.likeNotification, {
+                  $set: { from: req.body.id_user },
+                })
+                .then(
+                  () => {
+                    res.status(200).send({ Success: "liking post success" });
+                  },
                   (err) => {
                     console.log(
                       "notification updating failed for liking publication " +
@@ -209,7 +218,7 @@ module.exports.likeOrNotPublication = async (req, res) => {
 
 //F E T C H  C O M M E N T S
 module.exports.fetchComments = async (req, res) => {
-  // console.log(res.locals.user)
+  // console.log(currentUser)
   await publicationModel
     .findById(req.params.id, "comments")
     .populate({
@@ -262,7 +271,7 @@ module.exports.commentPublication = async (req, res) => {
                 to: publication.id_user,
                 from: req.body.commenterId,
                 on: publication._id,
-                docModel:'publication'
+                docModel: "publication",
               })
               .then(
                 (newNotification) => {
@@ -382,7 +391,8 @@ module.exports.deleteCommentpost = async (req, res) => {
 };
 
 // S E A R C H
-module.exports.searchPublications = (req, res) => {
+module.exports.searchPublications = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id);
   publicationModel
     .find({
       $and: [
@@ -395,9 +405,9 @@ module.exports.searchPublications = (req, res) => {
         {
           $or: [
             { public: true },
-            { id_user: res.locals.user.friends },
-            { id_user: res.locals.user._id },
-            { id_user: res.locals.user.subscriptions },
+            { id_user: currentUser.friends },
+            { id_user: req.id },
+            { id_user: currentUser.subscriptions },
           ],
         },
       ],

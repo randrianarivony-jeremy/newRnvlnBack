@@ -10,7 +10,7 @@ const connectDB = require("./config/db.js");
 const userRoutes = require("./Routes/user.routes");
 const authRoutes = require("./Routes/authentication.routes");
 const bodyParser = require("body-parser");
-const { checkUser, verifyJWT } = require("./config/auth.middleware");
+const { verifyJWT, checkUser } = require("./middleware/auth.middleware");
 const questionRoutes = require("./Routes/question.routes");
 const publicationRoutes = require("./Routes/publication.routes");
 const interviewRoutes = require("./Routes/interview.routes");
@@ -35,19 +35,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // //jwt
-app.get("/jwtid", checkUser, (req, res) => {
-  res.status(200).send(res.locals.user);
-});
+app.get("/check_user", checkUser);
 
 // //routes
 app.use("/api/auth", authRoutes);
-app.use("/api/user", checkUser, userRoutes);
-app.use("/api/question", checkUser, questionRoutes);
-app.use("/api/publication", checkUser, publicationRoutes);
-app.use("/api/interview", checkUser, interviewRoutes);
-app.use("/api/message", checkUser, messageRoutes);
-app.use("/api/conversation", checkUser, conversationRoutes);
-app.use("/api/notification", checkUser, notifRoutes);
+app.use("/api/user", verifyJWT, userRoutes);
+app.use("/api/question", verifyJWT, questionRoutes);
+app.use("/api/publication", verifyJWT, publicationRoutes);
+app.use("/api/interview", verifyJWT, interviewRoutes);
+app.use("/api/message", verifyJWT, messageRoutes);
+app.use("/api/conversation", verifyJWT, conversationRoutes);
+app.use("/api/notification", verifyJWT, notifRoutes);
 app.use("/api/feeds", verifyJWT, homefeedRoutes);
 app.all("*", (req, res) => {
   res.status(404).json({ message: "404 Not Found" });

@@ -165,19 +165,22 @@ module.exports.acceptToBeFriends = async (req, res) => {
 };
 
 module.exports.pullFromFriends = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "friends");
   if (req.body.to === req.body.from)
     throw new Error("Same user not supposed to be friends (pullFromFriends)");
-  if (!res.locals.user.friends.includes(req.body.to))
+  if (!currentUser.friends.includes(req.body.to))
     throw new Error("Already not friends");
   else {
     await Promise.all([
-      UserModel.findByIdAndUpdate(req.body.from,
+      UserModel.findByIdAndUpdate(
+        req.body.from,
         {
           $pull: { friends: req.body.to },
         },
         { select: "friends" }
       ),
-      UserModel.findByIdAndUpdate(req.body.to,
+      UserModel.findByIdAndUpdate(
+        req.body.to,
         {
           $pull: { friends: req.body.from },
         },
@@ -185,41 +188,56 @@ module.exports.pullFromFriends = async (req, res) => {
       ),
     ])
       .then(() =>
-        res.status(200)
+        res
+          .status(200)
           .send(`pulling ${req.body.to} from friends done successfully`)
       )
       .catch((err) => {
         res.send(err);
-        console.log(`pulling ${req.body.to} from ${req.bod.from}'s friends failed`);
+        console.log(
+          `pulling ${req.body.to} from ${req.bod.from}'s friends failed`
+        );
       });
   }
 };
 
-module.exports.cancelInvitation = (req, res) => {
+module.exports.cancelInvitation = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "friendInvitation");
   try {
     if (req.body.to === req.body.from)
-      throw new Error("Same user not supposed to be friends (cancelInvitation)");
-    if (!res.locals.user.friendInvitation.includes(req.body.to))
-      throw new Error(`${req.body.from} did not send friend invitation to ${req.body.to}`);
+      throw new Error(
+        "Same user not supposed to be friends (cancelInvitation)"
+      );
+    if (!currentUser.friendInvitation.includes(req.body.to))
+      throw new Error(
+        `${req.body.from} did not send friend invitation to ${req.body.to}`
+      );
     else {
       Promise.all([
-        UserModel.findByIdAndUpdate(req.body.from,
-          {$pull: { friendInvitation: req.body.to },},
+        UserModel.findByIdAndUpdate(
+          req.body.from,
+          { $pull: { friendInvitation: req.body.to } },
           { select: "friendInvitation" }
         ),
-        UserModel.findByIdAndUpdate(req.body.to,
-          {$pull: { friendRequest: req.body.from },},
+        UserModel.findByIdAndUpdate(
+          req.body.to,
+          { $pull: { friendRequest: req.body.from } },
           { select: "friendRequest" }
         ),
       ]).then(() =>
-        res.status(200).send(`cancelling ${req.body.from}'s friend invitation to ${req.body.to} done successfully`)
+        res
+          .status(200)
+          .send(
+            `cancelling ${req.body.from}'s friend invitation to ${req.body.to} done successfully`
+          )
       );
     }
   } catch (error) {
     {
       res.send(error);
       console.log(
-        `cancelling ${req.body.from}'s friend invitation to ${req.body.to} failed. Reason :` + error
+        `cancelling ${req.body.from}'s friend invitation to ${req.body.to} failed. Reason :` +
+          error
       );
     }
   }
@@ -636,11 +654,12 @@ module.exports.deleteUser = (req, res) => {
 };
 
 // S E A R C H
-module.exports.searchUser = (req, res) => {
+module.exports.searchUser = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "name");
   UserModel.find(
     {
       $and: [
-        { name: { $ne: res.locals.user.name } },
+        { name: { $ne: req.name } },
         {
           name: { $regex: req.query.query, $options: "i" },
         },
