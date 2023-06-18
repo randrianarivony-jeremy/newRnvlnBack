@@ -35,7 +35,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // //jwt
-app.get("/check_user", checkUser);
+app.get("/api/check_user", checkUser);
 
 // //routes
 app.use("/api/auth", authRoutes);

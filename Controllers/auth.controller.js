@@ -46,7 +46,7 @@ module.exports.signUp = async (req, res) => {
     });
 
     // Send accessToken containing email and name
-    res.json({ accessToken, user });
+    res.json({ accessToken });
   } catch (err) {
     res.status(400).send(err);
     console.log(err);
@@ -72,7 +72,6 @@ module.exports.signIn = async (req, res) => {
   const match = await bcrypt.compare(password, foundUser.password);
 
   if (!match) return res.status(406).json({ message: "Wrong password" });
-  foundUser["password"] = undefined;
 
   const accessToken = jwt.sign(
     {
@@ -100,7 +99,7 @@ module.exports.signIn = async (req, res) => {
   });
 
   // Send accessToken containing email and name
-  res.json({ accessToken, user: foundUser });
+  res.json({ accessToken });
 };
 
 // @desc Refresh
