@@ -31,10 +31,6 @@ const corsOptions = {
   origin: process.env.CLIENT_URL,
   credentials: true,
   optionsSuccessStatus: 200,
-  allowedHeaders: ["sessionId", "Content-type"],
-  exposedHeaders: ["sessionId"],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: false,
 };
 app.use(cors(corsOptions));
 
