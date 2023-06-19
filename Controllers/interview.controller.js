@@ -56,27 +56,28 @@ module.exports.createInterview = async (req, res) => {
 
 //READ
 module.exports.readInterview = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await interviewModel
-      .findById(req.params.id)
+      .find({
+        $and: [
+          { _id: req.params.id },
+          {
+            $or: [
+              { public: true },
+              { id_user: currentUser.friends },
+              { id_user: currentUser._id },
+              { id_user: currentUser.subscriptions },
+            ],
+          },
+        ],
+      })
       .populate("id_user", "name picture job")
       .populate({
         path: "question",
         populate: { path: "interviewer", select: "name picture job" },
       });
-    if (
-      result.public ||
-      String(req.id) === String(result.id_user._id) ||
-      currentUser.friends.some(
-        (friend) => String(friend) === String(result.id_user._id)
-      ) ||
-      currentUser.subscriptions.some(
-        (subscription) => String(subscription) === String(result.id_user._id)
-      )
-    )
-      res.status(200).json(result);
-    else res.status(401).json({ Error: "Confidentiality issue" });
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
   }
@@ -84,9 +85,22 @@ module.exports.readInterview = async (req, res) => {
 
 //READ ALL
 module.exports.readQuestionInterviews = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await interviewModel
-      .find({ question: req.params.questionId })
+      .find({
+        $and: [
+          { question: req.params.questionId },
+          {
+            $or: [
+              { public: true },
+              { id_user: currentUser.friends },
+              { id_user: currentUser._id },
+              { id_user: currentUser.subscriptions },
+            ],
+          },
+        ],
+      })
       .populate("id_user", "name picture job")
       .populate({
         path: "question",
@@ -101,9 +115,22 @@ module.exports.readQuestionInterviews = async (req, res) => {
 
 //READ USER INTERVIEWS
 module.exports.readUserInterviews = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await interviewModel
       .find({ id_user: req.params.id })
+      .find({
+        $and: [
+          { id_user: req.params.id },
+          {
+            $or: [
+              { public: true },
+              { id_user: currentUser.friends },
+              { id_user: currentUser.subscriptions },
+            ],
+          },
+        ],
+      })
       .select("id_user data type createdAt");
     res.status(200).json(result);
   } catch (error) {
@@ -113,7 +140,7 @@ module.exports.readUserInterviews = async (req, res) => {
 
 //READ ALL
 module.exports.fetchInterviews = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   interviewModel
     .find({
       $or: [
@@ -464,7 +491,7 @@ module.exports.deleteCommentpost = async (req, res) => {
 
 // S E A R C H
 module.exports.searchInterviews = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(req.id,'friends subscriptions');
   interviewModel
     .find({
       $and: [

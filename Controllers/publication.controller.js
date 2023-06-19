@@ -1,5 +1,4 @@
 const publicationModel = require("../Models/publication.model");
-const questionModel = require("../Models/question.model");
 const notificationModel = require("../Models/notification.model");
 const UserModel = require("../Models/user.model");
 
@@ -21,9 +20,22 @@ module.exports.createPublication = async (req, res) => {
 
 //READ
 module.exports.readPublication = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await publicationModel
-      .findById(req.params.id)
+      .find({
+        $and: [
+          { _id: req.params.id },
+          {
+            $or: [
+              { public: true },
+              { id_user: currentUser.friends },
+              { id_user: currentUser._id },
+              { id_user: currentUser.subscriptions },
+            ],
+          },
+        ],
+      })
       .populate("id_user", "name picture job");
     res.status(200).json(result);
   } catch (error) {
@@ -33,9 +45,21 @@ module.exports.readPublication = async (req, res) => {
 
 //READ USER PUBLICATIONS
 module.exports.readUserPublications = async (req, res) => {
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await publicationModel
-      .find({ id_user: req.params.id })
+      .find({
+        $and: [
+          { id_user: req.params.id },
+          {
+            $or: [
+              { public: true },
+              { id_user: currentUser.friends },
+              { id_user: currentUser.subscriptions },
+            ],
+          },
+        ],
+      })
       .select("id_user data type createdAt");
     res.status(200).json(result);
   } catch (error) {
@@ -45,8 +69,8 @@ module.exports.readUserPublications = async (req, res) => {
 
 //READ ALL
 module.exports.fetchPublications = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
-  await publicationModel
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const result = await publicationModel
     .find({
       $or: [
         { public: true },
@@ -55,14 +79,8 @@ module.exports.fetchPublications = async (req, res) => {
         { id_user: currentUser.subscriptions },
       ],
     })
-    .populate("id_user", "name picture job")
-    .then((docs) => {
-      res.json(docs);
-    })
-    .catch((err) => {
-      res.status(500).send("some error occurs while fetching publications");
-      console.log(err);
-    });
+    .populate("id_user", "name picture job");
+  res.status(200).json(result);
 };
 
 //UPDATE
@@ -392,7 +410,7 @@ module.exports.deleteCommentpost = async (req, res) => {
 
 // S E A R C H
 module.exports.searchPublications = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   publicationModel
     .find({
       $and: [
