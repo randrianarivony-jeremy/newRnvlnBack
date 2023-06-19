@@ -11,46 +11,41 @@ module.exports.signUp = async (req, res) => {
     );
   };
   let { password } = req.body;
-  try {
-    const salt = await bcrypt.genSalt(10);
-    password = await bcrypt.hash(password, salt);
-    const user = await UserModel.create({
-      name: PascalCaseName(),
-      email,
-      password,
-      job,
-      address,
-      picture,
-    }).select("-password");
-    const accessToken = jwt.sign(
-      {
-        UserInfo: {
-          name: user.name,
-          id: user._id,
-        },
+  const salt = await bcrypt.genSalt(10);
+  password = await bcrypt.hash(password, salt);
+  const user = await UserModel.create({
+    name: PascalCaseName(),
+    email,
+    password,
+    job,
+    address,
+    picture,
+  }).select("-password");
+  const accessToken = jwt.sign(
+    {
+      UserInfo: {
+        name: user.name,
+        id: user._id,
       },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "10s" }
-    );
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "10s" }
+  );
 
-    const refreshToken = jwt.sign(
-      { id: user._id },
-      process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "20s" }
-    );
-    res.cookie("jwt", refreshToken, {
-      httpOnly: true, //accessible only by web server
-      secure: true, //https
-      sameSite: "None", //cross-site cookie
-      maxAge: 20 * 1000, //cookie expiry: set to match rT
-    });
+  const refreshToken = jwt.sign(
+    { id: user._id },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: "20m" }
+  );
+  res.cookie("jwt", refreshToken, {
+    httpOnly: true, //accessible only by web server
+    secure: true, //https
+    sameSite: "None", //cross-site cookie
+    maxAge: 20 * 60 * 1000, //cookie expiry: set to match rT
+  });
 
-    // Send accessToken containing email and name
-    res.json({ accessToken });
-  } catch (err) {
-    res.status(400).send(err);
-    console.log(err);
-  }
+  // Send accessToken containing email and name
+  res.json({ accessToken });
 };
 
 // @desc Login

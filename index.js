@@ -2,14 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+
 require("dotenv").config({ path: "./config/.env" });
 require("./config/db.js");
-const app = express();
+
+const errorHandler = require("./middleware/errorHandler");
 const connectDB = require("./config/db.js");
 
 const userRoutes = require("./Routes/user.routes");
 const authRoutes = require("./Routes/authentication.routes");
-const bodyParser = require("body-parser");
 const { verifyJWT, checkUser } = require("./middleware/auth.middleware");
 const questionRoutes = require("./Routes/question.routes");
 const publicationRoutes = require("./Routes/publication.routes");
@@ -19,10 +20,10 @@ const conversationRoutes = require("./Routes/conversation.routes");
 const notifRoutes = require("./Routes/notification.routes");
 const homefeedRoutes = require("./Routes/homefeeds.routes");
 
-connectDB();
+const app = express();
+app.use(express.json());
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+connectDB();
 
 app.use(cookieParser());
 app.use(helmet());
@@ -50,6 +51,8 @@ app.use("/api/feeds", verifyJWT, homefeedRoutes);
 app.all("*", (req, res) => {
   res.status(404).json({ message: "404 Not Found" });
 });
+
+app.use(errorHandler);
 
 //server
 app.listen(process.env.PORT, () => {
