@@ -23,7 +23,7 @@ module.exports.readPublication = async (req, res) => {
   const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await publicationModel
-      .find({
+      .findOne({
         $and: [
           { _id: req.params.id },
           {

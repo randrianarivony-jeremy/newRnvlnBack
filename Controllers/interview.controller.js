@@ -59,7 +59,7 @@ module.exports.readInterview = async (req, res) => {
   const currentUser = await UserModel.findById(req.id, "friends subscriptions");
   try {
     const result = await interviewModel
-      .find({
+      .findOne({
         $and: [
           { _id: req.params.id },
           {

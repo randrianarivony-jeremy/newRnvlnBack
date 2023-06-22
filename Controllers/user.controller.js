@@ -90,7 +90,9 @@ module.exports.inviteToBeFriends = async (req, res) => {
                   }
                 );
               }
-              res.status(200).send("friend invitation sent successfully");
+              res
+                .status(200)
+                .json({ message: "friend invitation sent successfully" });
             });
           }
         }
@@ -152,7 +154,9 @@ module.exports.acceptToBeFriends = async (req, res) => {
                   }
                 );
               }
-              res.status(200).send("friend request accepted successfully");
+              res
+                .status(200)
+                .json({ message: "friend request accepted successfully" });
             });
           }
         }
@@ -190,7 +194,9 @@ module.exports.pullFromFriends = async (req, res) => {
       .then(() =>
         res
           .status(200)
-          .send(`pulling ${req.body.to} from friends done successfully`)
+          .json({
+            message: `pulling ${req.body.to} from friends done successfully`,
+          })
       )
       .catch((err) => {
         res.send(err);
@@ -225,11 +231,9 @@ module.exports.cancelInvitation = async (req, res) => {
           { select: "friendRequest" }
         ),
       ]).then(() =>
-        res
-          .status(200)
-          .send(
-            `cancelling ${req.body.from}'s friend invitation to ${req.body.to} done successfully`
-          )
+        res.status(200).json({
+          message: `cancelling ${req.body.from}'s friend invitation to ${req.body.to} done successfully`,
+        })
       );
     }
   } catch (error) {

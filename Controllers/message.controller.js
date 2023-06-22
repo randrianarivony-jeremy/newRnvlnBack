@@ -185,54 +185,32 @@ module.exports.fetchMessages = async (req, res) => {
   }
 };
 
-module.exports.fetchMessagesByConversationId = async (req, res) => {
-  try {
-    const conversation = await conversationModel
-      .findById(req.params.conversationId, "messages")
-      .populate("messages")
-      .limit(20);
-    res.status(200).json(conversation.messages);
-  } catch (err) {
-    console.log(
-      "message fetching failed" + req.params.user + "---" + err.message
-    );
-    res.status(500).send("message fetching failed");
-  }
-};
+// module.exports.fetchMessagesByConversationId = async (req, res) => {
+//   try {
+//     const conversation = await conversationModel
+//       .findById(req.params.conversationId, "messages")
+//       .populate("messages")
+//       .limit(20);
+//     res.status(200).json(conversation.messages);
+//   } catch (err) {
+//     console.log(
+//       "message fetching failed" + req.params.user + "---" + err.message
+//     );
+//     res.status(500).send("message fetching failed");
+//   }
+// };
 
 module.exports.deleteMessage = async (req, res) => {
-  await messageModel.findByIdAndDelete(req.params.id).then(
-    async (doc) => {
-      await conversationModel
-        .findByIdAndUpdate(
-          req.params.conversationId,
-          {
-            $pull: { messages: req.params.id },
-          },
-          { new: true }
-        )
-        .then(
-          async (conversation) => {
-            if (conversation.messages.length === 0)
-              await conversationModel.findByIdAndDelete(conversation._id);
-            res.status(200).send(doc._id);
-          },
-          (err) => {
-            console.log(
-              "conversation message pulling failed" +
-                req.params.id +
-                "---" +
-                err
-            );
-            res
-              .status(500)
-              .send("message deleting failed upon conversation model");
-          }
-        );
-    },
-    (err) => {
-      console.log("message deleting failed" + req.params.id + "---" + err);
-      res.status(500).send("message deleting failed");
-    }
-  );
+  await messageModel.findByIdAndDelete(req.params.id)
+  const conversation = await conversationModel
+  .findByIdAndUpdate(
+      req.params.conversationId,
+      {
+        $pull: { messages: req.params.id },
+      },
+      { new: true }
+      )
+      if (conversation.messages.length === 0)
+      await  conversationModel.findByIdAndDelete(req.params.conversationId)
+    res.status(200).json({message:'message deletion done'});
 };
