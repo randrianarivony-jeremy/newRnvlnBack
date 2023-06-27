@@ -24,8 +24,7 @@ router.patch('/cancel_invitation', userController.cancelInvitation);
 //Updating
 router.put('/username/:id', userController.updateUsername);
 router.put('/email/:id', userController.updateEmail);
-router.put('/password/:id',userController.updatePassword);
-router.put('/subscription/:id',userController.enableSubscription);
+router.put("/password/:id", userController.updatePassword);
 router.put('/fees/:id',userController.updateFees);
 router.put('/profilepicture/:id',userController.changeProfilePicture);
 router.put('/address/:id',userController.changeAddress);

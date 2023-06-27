@@ -247,37 +247,6 @@ module.exports.cancelInvitation = async (req, res) => {
   }
 };
 
-module.exports.enableSubscription = async (req, res) => {
-  await UserModel.findById(req.params.id).then(async (user) => {
-    const auth = await bcrypt.compare(req.body.password, user.password);
-    if (auth) {
-      if (req.body.enabled) {
-        user.subscription = true;
-        user.fees = req.body.fees;
-        user.save().then(
-          (doc) =>
-            res
-              .status(200)
-              .json({ subscription: doc.subscription, fees: doc.fees }),
-          (err) => {
-            console.log("enable subscription failed for " + user + "---" + err);
-            res.status(500).send("enable subscription failed");
-          }
-        );
-      } else {
-        user.subscription = false;
-        user.save().then(
-          (doc) => res.status(200).json({ subscription: doc.subscription }),
-          (err) => {
-            console.log("cancel subscription failed for " + user + "---" + err);
-            res.status(500).send("cancel subscription failed");
-          }
-        );
-      }
-    } else res.status(400).send("Mot de passe incorrect");
-  });
-};
-
 module.exports.subscribe = async (req, res) => {
   let subscriber = await UserModel.findById(
     req.id,

@@ -39,10 +39,6 @@ const userSchema = new mongoose.Schema(
       max: 30,
       default: "",
     },
-    subscription: {
-      type: Boolean,
-      default: false,
-    },
     fees: {
       type: Number,
       default: undefined,
@@ -119,5 +115,5 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-const UserModel = mongoose.model("user", userSchema); //user represente le nom de la collection à creer en respectant le model userShema
+const UserModel = mongoose.model("user", userSchema);
 module.exports = UserModel;
