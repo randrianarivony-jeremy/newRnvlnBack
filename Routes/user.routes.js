@@ -14,8 +14,8 @@ router.get("/requests/:id", userController.fetchFriendRequests);
 router.get("/subscribers/:id", userController.fetchSubscribers);
 router.get("/subscriptions/:id", userController.fetchSubscriptions);
 
-router.patch('/subscribe/:id', userController.subscribe);
-router.patch('/unsubscribe/:id', userController.unsubscribe);
+router.patch("/subscribe", userController.subscribe);
+router.patch("/unsubscribe", userController.unsubscribe);
 router.patch('/friend_invitation', userController.inviteToBeFriends);
 router.patch('/accept_friend', userController.acceptToBeFriends);
 router.patch('/pull_friend', userController.pullFromFriends);

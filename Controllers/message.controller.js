@@ -185,32 +185,16 @@ module.exports.fetchMessages = async (req, res) => {
   }
 };
 
-// module.exports.fetchMessagesByConversationId = async (req, res) => {
-//   try {
-//     const conversation = await conversationModel
-//       .findById(req.params.conversationId, "messages")
-//       .populate("messages")
-//       .limit(20);
-//     res.status(200).json(conversation.messages);
-//   } catch (err) {
-//     console.log(
-//       "message fetching failed" + req.params.user + "---" + err.message
-//     );
-//     res.status(500).send("message fetching failed");
-//   }
-// };
-
 module.exports.deleteMessage = async (req, res) => {
-  await messageModel.findByIdAndDelete(req.params.id)
-  const conversation = await conversationModel
-  .findByIdAndUpdate(
-      req.params.conversationId,
-      {
-        $pull: { messages: req.params.id },
-      },
-      { new: true }
-      )
-      if (conversation.messages.length === 0)
-      await  conversationModel.findByIdAndDelete(req.params.conversationId)
-    res.status(200).json({message:'message deletion done'});
+  await messageModel.findByIdAndDelete(req.params.id);
+  const conversation = await conversationModel.findByIdAndUpdate(
+    req.params.conversationId,
+    {
+      $pull: { messages: req.params.id },
+    },
+    { new: true }
+  );
+  if (conversation.messages.length === 0)
+    await conversationModel.findByIdAndDelete(req.params.conversationId);
+  res.status(200).json({ message: "message deletion done" });
 };

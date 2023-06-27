@@ -280,7 +280,7 @@ module.exports.enableSubscription = async (req, res) => {
 
 module.exports.subscribe = async (req, res) => {
   let subscriber = await UserModel.findById(
-    req.params.id,
+    req.id,
     "password subscriptions wallet"
   );
   const auth = await bcrypt.compare(req.body.password, subscriber.password); //comparrer le name avec le base bcrypt
@@ -291,7 +291,7 @@ module.exports.subscribe = async (req, res) => {
     ).then(
       async (subscribed) => {
         if (subscriber.wallet < subscribed.fees)
-          res.status(400).send("insufficient");
+          res.status(400).json({ message: "insufficient" });
         else {
           subscriber.wallet -= subscribed.fees;
           subscriber.subscriptions.push(subscribed._id);
@@ -307,17 +307,20 @@ module.exports.subscribe = async (req, res) => {
                   .create({
                     action: "subscribe",
                     to: subscribed._id,
-                    from: req.params.id,
+                    from: req.id,
                   })
                   .then(
                     (newNotification) => {
                       subscribed.subscriptionNotification = newNotification._id;
                       subscribed.save().then(
-                        () => res.status(200).send("subscription success"),
+                        () =>
+                          res
+                            .status(200)
+                            .send({ message: "subscription success" }),
                         (err) => {
                           console.log(
                             "subscribed user updating subscriptionnotification failed for subscriber user " +
-                              req.params.id +
+                              req.id +
                               "---" +
                               err
                           );
@@ -328,7 +331,7 @@ module.exports.subscribe = async (req, res) => {
                     (err) => {
                       console.log(
                         "creating notification failed for subscriber user " +
-                          req.params.id +
+                          req.id +
                           "---" +
                           err
                       );
@@ -338,14 +341,15 @@ module.exports.subscribe = async (req, res) => {
               } else {
                 notificationModel
                   .findByIdAndUpdate(subscribed.subscriptionNotification, {
-                    $set: { from: req.params.id },
+                    $set: { from: req.id },
                   })
                   .then(
-                    () => res.status(200).send("subscribing success"),
+                    () =>
+                      res.status(200).json({ message: "subscribing success" }),
                     (err) => {
                       console.log(
                         "notification updating failed for subscriber user " +
-                          req.params.id +
+                          req.id +
                           "---" +
                           err
                       );
@@ -372,83 +376,78 @@ module.exports.subscribe = async (req, res) => {
       }
     );
   } else {
-    res.status(400).send("Mot de passe incorrect");
+    res.status(400).json({ message: "Mot de passe incorrect" });
   }
 };
 
 module.exports.unsubscribe = async (req, res) => {
-  await UserModel.findById(req.params.id, "password").then(
-    async (unsubscriber) => {
-      const auth = await bcrypt.compare(
-        req.body.password,
-        unsubscriber.password
+  await UserModel.findById(req.id, "password").then(async (unsubscriber) => {
+    const auth = await bcrypt.compare(req.body.password, unsubscriber.password);
+    if (auth) {
+      await UserModel.findByIdAndUpdate(req.id, {
+        $pull: { subscriptions: req.body.id_user },
+      }).then(
+        async () =>
+          await UserModel.findByIdAndUpdate(
+            req.body.id_user,
+            {
+              $pull: { subscribers: req.id },
+            },
+            { new: true, select: "subscriptionNotification subscribers" }
+          ).then(
+            (subscribed) => {
+              if (subscribed.subscribers.length === 0) {
+                notificationModel
+                  .findByIdAndDelete(subscribed.subscriptionNotification)
+                  .then(
+                    () => {
+                      subscribed.subscriptionNotification = null;
+                      subscribed.save().then(
+                        () =>
+                          res.status(200).json({ message: "unsubscribe done" }),
+                        (err) => {
+                          console.log(
+                            "setting subscriptionnotification to null failed for unsubscriber user " +
+                              req.id +
+                              "---" +
+                              err
+                          );
+                          res.status(500).send("unsubscription action failed");
+                        }
+                      );
+                    },
+                    (err) => {
+                      console.log(
+                        "deleting notification failed for unsubscriber user " +
+                          req.id +
+                          "---" +
+                          err
+                      );
+                      res.status(500).send("unsubscription action failed");
+                    }
+                  );
+              } else
+                res.status(200).json({ message: "unsubscription action done" });
+            },
+            (err) => {
+              console.log("Unsubscribe : pull subscriber failed" + err);
+              res.status(500).send("pull subscriber failed");
+            }
+          ),
+        (err) => {
+          console.log(
+            "Subscribe : subscription user not found: id" +
+              req.body.id_user +
+              "---" +
+              err
+          );
+          res.status(500).send("subscription user not found");
+        }
       );
-      if (auth) {
-        await UserModel.findByIdAndUpdate(req.params.id, {
-          $pull: { subscriptions: req.body.id_user },
-        }).then(
-          async () =>
-            await UserModel.findByIdAndUpdate(
-              req.body.id_user,
-              {
-                $pull: { subscribers: req.params.id },
-              },
-              { new: true, select: "subscriptionNotification subscribers" }
-            ).then(
-              (subscribed) => {
-                if (subscribed.subscribers.length === 0) {
-                  notificationModel
-                    .findByIdAndDelete(subscribed.subscriptionNotification)
-                    .then(
-                      () => {
-                        subscribed.subscriptionNotification = null;
-                        subscribed.save().then(
-                          () => res.status(200).send("unsubscribe done"),
-                          (err) => {
-                            console.log(
-                              "setting subscriptionnotification to null failed for unsubscriber user " +
-                                req.params.id +
-                                "---" +
-                                err
-                            );
-                            res
-                              .status(500)
-                              .send("unsubscription action failed");
-                          }
-                        );
-                      },
-                      (err) => {
-                        console.log(
-                          "deleting notification failed for unsubscriber user " +
-                            req.params.id +
-                            "---" +
-                            err
-                        );
-                        res.status(500).send("unsubscription action failed");
-                      }
-                    );
-                } else res.status(200).send("unsubscription action done");
-              },
-              (err) => {
-                console.log("Unsubscribe : pull subscriber failed" + err);
-                res.status(500).send("pull subscriber failed");
-              }
-            ),
-          (err) => {
-            console.log(
-              "Subscribe : subscription user not found: id" +
-                req.body.id_user +
-                "---" +
-                err
-            );
-            res.status(500).send("subscription user not found");
-          }
-        );
-      } else {
-        res.status(400).send("Mot de passe incorrect");
-      }
+    } else {
+      res.status(400).json({ message: "Mot de passe incorrect" });
     }
-  );
+  });
 };
 
 module.exports.fetchFriends = (req, res) => {
@@ -508,7 +507,10 @@ module.exports.updateUsername = async (req, res) => {
   await UserModel.findById(req.params.id).then(async (user) => {
     const auth = await bcrypt.compare(req.body.password, user.password);
     if (auth) {
-      user.name = req.body.name;
+      user.name = req.body.name.replace(
+        /\w\S*/g,
+        (m) => m.charAt(0).toUpperCase() + m.substr(1).toLowerCase()
+      );
       user.save().then(
         (doc) => res.status(200).json({ name: doc.name }),
         (err) => {
@@ -560,7 +562,8 @@ module.exports.updatePassword = async (req, res) => {
       const newPassword = await bcrypt.hash(req.body.newPassword, salt);
       user.password = newPassword;
       user.save().then(
-        () => res.status(200).send("Password modified successfully"),
+        () =>
+          res.status(200).json({ message: "Password modified successfully" }),
         (err) => {
           console.log("update password failed for " + user + "---" + err);
           res.status(500).send("update password failed");

@@ -14,7 +14,9 @@ module.exports.checkUser = async (req, res, next) => {
 
         Promise.all([
           //current user
-          UserModel.findById(decodedToken.id).select("-password"),
+          UserModel.findById(decodedToken.id).select(
+            "name job friends subscriptions subscribers picture"
+          ),
           //check new messages
           conversationModel.find({ members: { $in: [decodedToken.id] } }),
           notificationModel.find({ to: decodedToken.id }),
