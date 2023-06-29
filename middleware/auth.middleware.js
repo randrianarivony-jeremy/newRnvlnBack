@@ -4,18 +4,18 @@ const notificationModel = require("../Models/notification.model");
 const UserModel = require("../Models/user.model");
 
 module.exports.checkUser = async (req, res, next) => {
-  const token = req.cookies.jwt;
+  const token = req.cookies.plusvaloo_jwt;
   if (token) {
     jwt.verify(
       token,
       process.env.REFRESH_TOKEN_SECRET,
       async (err, decodedToken) => {
-        if (err) return res.status(401).send({ message: err.message });
+        if (err) return res.status(403).json({ message: err.message });
 
         Promise.all([
           //current user
           UserModel.findById(decodedToken.id).select(
-            "name job friends subscriptions subscribers picture"
+            "name job friends subscriptions subscribers picture friendInvitation friendRequest"
           ),
           //check new messages
           conversationModel.find({ members: { $in: [decodedToken.id] } }),

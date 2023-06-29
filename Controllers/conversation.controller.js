@@ -5,10 +5,11 @@ module.exports.fetchConversationByUserId = async (req, res) => {
     {
       members: { $all: [req.params.userId, req.id] },
     },
-    "_id"
+    "_id category"
   );
   res.status(200).json(conversation);
 };
+
 module.exports.fetchMainConversation = async (req, res) => {
   conversationModel
     .find({

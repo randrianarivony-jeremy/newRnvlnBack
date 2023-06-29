@@ -37,7 +37,7 @@ module.exports.signUp = async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "20m" }
   );
-  res.cookie("jwt", refreshToken, {
+  res.cookie("plusvaloo_jwt", refreshToken, {
     httpOnly: true, //accessible only by web server
     secure: true, //https
     sameSite: "None", //cross-site cookie
@@ -86,7 +86,7 @@ module.exports.signIn = async (req, res) => {
   );
 
   // Create secure cookie with refresh token
-  res.cookie("jwt", refreshToken, {
+  res.cookie("plusvaloo_jwt", refreshToken, {
     httpOnly: true, //accessible only by web server
     secure: true, //https
     sameSite: "None", //cross-site cookie
@@ -101,10 +101,10 @@ module.exports.signIn = async (req, res) => {
 // @route GET /auth/refresh
 // @access Public - because access token has expired
 module.exports.refreshToken = (req, res) => {
-  if (!req.cookies?.jwt)
+  if (!req.cookies?.plusvaloo_jwt)
     return res.status(403).json({ message: "Unauthorized ! No refresh token" });
 
-  const refreshToken = req.cookies.jwt;
+  const refreshToken = req.cookies.plusvaloo_jwt;
 
   jwt.verify(
     refreshToken,
@@ -134,6 +134,6 @@ module.exports.refreshToken = (req, res) => {
 };
 
 module.exports.logout = (req, res) => {
-  res.cookie("jwt", "", { maxAge: 1 });
-  res.status(200).json({ message: "cookie removed" });
+  res.cookie("plusvaloo_jwt", "", { maxAge: 1 });
+  res.status(200).json({ message: "Cookie removed" });
 };
