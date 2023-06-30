@@ -9,12 +9,10 @@ const ConversationSchema = new mongoose.Schema(
         required: true,
       },
     ],
-    messages: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "message",
-      },
-    ],
+    lastMessage: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "message",
+    },
     unseenMessage: [
       //unseen message
       {
@@ -22,7 +20,12 @@ const ConversationSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: "user",
         },
-        new: { type: Number, default: 0 },
+        new: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "message",
+          },
+        ],
       },
     ],
   },

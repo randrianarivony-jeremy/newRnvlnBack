@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const conversationModel = require("../Models/conversation.model");
 const UserModel = require("../Models/user.model");
 
@@ -6,7 +7,7 @@ module.exports.fetchConversationByUserId = async (req, res) => {
     {
       members: { $all: [req.params.userId, req.id] },
     },
-    "_id category"
+    "_id"
   );
   res.status(200).json(conversation);
 };
@@ -32,11 +33,7 @@ module.exports.fetchMainConversation = async (req, res) => {
     .sort({ updatedAt: -1 })
     // .limit(15)
     .populate("members", "name picture job")
-    .populate({
-      path: "messages",
-      perDocumentLimit: 1,
-      options: { sort: { createdAt: -1 } },
-    })
+    .populate("lastMessage")
     .then(
       (conversations) => {
         res.status(200).json(conversations);
@@ -125,4 +122,19 @@ module.exports.updateNewMessage = (req, res) => {
     $set: newMessageRestore,
   }).exec();
   res.status(200).json({ message: "New message checked" });
+};
+
+module.exports.updateUnseenMessage = (req, res) => {
+  conversationModel
+    .findByIdAndUpdate(
+      req.params.conversationId,
+      {
+        $set: { "unseenMessage.$[element].new": 0 },
+      },
+      {
+        arrayFilters: [{ "element.user": new mongoose.Types.ObjectId(req.id) }],
+      }
+    )
+    .exec();
+  res.status(200).json({ message: "unseenMessage checked" });
 };

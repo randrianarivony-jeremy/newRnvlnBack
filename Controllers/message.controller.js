@@ -1,5 +1,7 @@
+const { default: mongoose } = require("mongoose");
 const conversationModel = require("../Models/conversation.model");
 const messageModel = require("../Models/message.model");
+const { findByIdAndUpdate } = require("../Models/user.model");
 const UserModel = require("../Models/user.model");
 
 //create conversation and message
@@ -34,9 +36,10 @@ module.exports.createMessage = async (req, res) => {
                     $push: { messages: savedMessage._id },
                     $set: {
                       unseenMessage: [
-                        { user: sender },
-                        { user: recipient, new: 1 },
+                        { user: sender, new: [] },
+                        { user: recipient, new: savedMessage._id },
                       ],
+                      lastMessage: savedMessage._id,
                     },
                   }
                 )
@@ -93,89 +96,82 @@ module.exports.createMessage = async (req, res) => {
       .create({ conversationId, sender, content, contentType })
       .then(
         async (savedMessage) => {
-          await conversationModel.findOne({ _id: conversationId }).then(
-            (conversation) => {
-              conversation.messages = [
-                ...conversation.messages,
-                savedMessage._id,
-              ];
-              conversation.unseenMessage = conversation.unseenMessage.map(
-                (user) => {
-                  if (user.user == recipient)
-                    return { ...user, new: user.new + 1 };
-                  else return user;
-                }
-              );
-              conversation.save().then(
-                async () => {
-                  let newMessageIncrement;
-                  if (category === "main")
-                    newMessageIncrement = { newMainMessage: 1 };
-                  else newMessageIncrement = { newSecondMessage: 1 };
-                  await UserModel.updateOne(
-                    { _id: recipient },
-                    { $inc: newMessageIncrement }
-                  ).then(
-                    () =>
-                      res
-                        .status(201)
-                        .json({ newMessage: savedMessage, category }),
-                    (err) => {
-                      console.log(
-                        "incrementation messagenotseen failed for user" +
-                          recipient +
-                          "---" +
-                          err
-                      );
-                      res
-                        .status(500)
-                        .send("incrementation messagenotseen failed");
-                    }
-                  );
-                },
-                (err) => {
-                  console.log(
-                    "pushing message into conversation failed for conversation" +
-                      conversationId +
-                      "---" +
-                      err
-                  );
-                  res
-                    .status(500)
-                    .send("pushing message into conversation failed");
-                }
-              );
-            },
-            (err) => {
-              console.log(
-                "conversation not found " + conversationId + "---" + err
-              );
-              res.status(500).send("conversation not found");
-            }
-          );
+          await conversationModel
+            .findByIdAndUpdate(
+              conversationId,
+              {
+                $set: { lastMessage: savedMessage._id },
+                $push: { "unseenMessage.$[element].new": savedMessage._id },
+              },
+              {
+                arrayFilters: [
+                  { "element.user": new mongoose.Types.ObjectId(recipient) },
+                ],
+              }
+            )
+            .then(
+              async () => {
+                let newMessageIncrement;
+                if (category === "main")
+                  newMessageIncrement = { newMainMessage: 1 };
+                else newMessageIncrement = { newSecondMessage: 1 };
+                await UserModel.updateOne(
+                  { _id: recipient },
+                  { $inc: newMessageIncrement }
+                ).then(
+                  () =>
+                    res
+                      .status(201)
+                      .json({ newMessage: savedMessage, category }),
+                  (err) => {
+                    console.log(
+                      "incrementation messagenotseen failed for user" +
+                        recipient +
+                        "---" +
+                        err
+                    );
+                    res
+                      .status(500)
+                      .send("incrementation messagenotseen failed");
+                  }
+                );
+              },
+              (err) => {
+                console.log(
+                  "pushing message into conversation failed for conversation" +
+                    conversationId +
+                    "---" +
+                    err
+                );
+                res
+                  .status(500)
+                  .send("pushing message into conversation failed");
+              }
+            );
         },
         (err) => {
-          console.log("message savings failed " + conversationId + "---" + err);
-          res.status(500).send("message savings failed");
+          console.log("conversation not found " + conversationId + "---" + err);
+          res.status(500).send("conversation not found");
         }
       );
+    (err) => {
+      console.log("message savings failed " + conversationId + "---" + err);
+      res.status(500).send("message savings failed");
+    };
   }
 };
-
-//get
 
 module.exports.fetchMessages = async (req, res) => {
   try {
     const conversation = await conversationModel
       .findOne({ members: { $all: [req.params.userId, req.id] } })
-      .populate("messages");
+      .select("_id")
+      .lean();
     if (conversation !== null) {
-      conversation.unseenMessage = conversation.unseenMessage.map((elt) => {
-        if (String(elt.user) == String(req.id)) return { ...elt, new: 0 };
-        else return elt;
-      });
-      conversation.save();
-      res.status(200).json(conversation.messages);
+      const messages = await messageModel
+        .find({ conversationId: conversation._id })
+        .lean();
+      res.status(200).json(messages);
     } else {
       res.status(200).json(conversation);
     }
@@ -189,14 +185,24 @@ module.exports.fetchMessages = async (req, res) => {
 
 module.exports.deleteMessage = async (req, res) => {
   await messageModel.findByIdAndDelete(req.params.id);
-  const conversation = await conversationModel.findByIdAndUpdate(
-    req.params.conversationId,
-    {
-      $pull: { messages: req.params.id },
-    },
-    { new: true }
-  );
-  if (conversation.messages.length === 0)
+  const remains = await messageModel
+    .find({ conversationId: req.params.conversationId }, "_id")
+    .sort({ createdAt: -1 })
+    .lean();
+  if (remains.length === 0)
     await conversationModel.findByIdAndDelete(req.params.conversationId);
+  else
+    await conversationModel.findByIdAndUpdate(
+      req.params.conversationId,
+      {
+        $pull: { "unseenMessage.$[element].new": req.params.id },
+        $set: { lastMessage: remains[0]._id },
+      },
+      {
+        arrayFilters: [
+          { "element.user": { $ne: new mongoose.Types.ObjectId(req.id) } },
+        ],
+      }
+    );
   res.status(200).json({ message: "message deletion done" });
 };
