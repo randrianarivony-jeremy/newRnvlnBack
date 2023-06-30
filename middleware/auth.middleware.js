@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const conversationModel = require("../Models/conversation.model");
 const notificationModel = require("../Models/notification.model");
 const UserModel = require("../Models/user.model");
 
@@ -15,32 +14,15 @@ module.exports.checkUser = async (req, res, next) => {
         Promise.all([
           //current user
           UserModel.findById(decodedToken.id).select(
-            "name job friends subscriptions subscribers picture friendInvitation friendRequest"
+            "name job friends subscriptions subscribers picture friendInvitation friendRequest newMainMessage newSecondMessage"
           ),
-          //check new messages
-          conversationModel.find({ members: { $in: [decodedToken.id] } }),
           notificationModel.find({ to: decodedToken.id }),
-        ]).then(([user, conversations, notifications]) => {
-          let newMainMessage = 0;
-          let newSecondMessage = 0;
-          let newNotification = 0;
-
-          //new messages count
-          conversations.map((conv) => {
-            if (conv.category === "main") {
-              conv.newMessage = conv.newMessage.map((elt) => {
-                if (String(elt.user) == String(decodedToken.id))
-                  newMainMessage += elt.new;
-              });
-            } else {
-              conv.newMessage = conv.newMessage.map((elt) => {
-                if (String(elt.user) == String(decodedToken.id))
-                  newSecondMessage += elt.new;
-              });
-            }
-          });
+        ]).then(([user, notifications]) => {
+          let newMainMessage = user.newMainMessage;
+          let newSecondMessage = user.newSecondMessage;
 
           //new notifications count
+          let newNotification = 0;
           notifications.map((notif) => {
             if (notif.seen === false) newNotification += 1;
           });

@@ -4,7 +4,10 @@ const UserModel = require("../Models/user.model");
 
 //create conversation and message
 module.exports.createMessage = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(
+    req.id,
+    "friends subscribers subscriptions"
+  );
   let { sender, recipient, content, contentType, conversationId } = req.body;
   let category = "second"; //matter of real time notification ui
   if (
@@ -17,7 +20,7 @@ module.exports.createMessage = async (req, res) => {
   if (conversationId === null) {
     //first message
     conversationModel
-      .create({ members: [sender, recipient], category })
+      .create({ members: [sender, recipient] })
       .then((newConversation) => {
         conversationId = newConversation._id;
         messageModel
@@ -34,18 +37,18 @@ module.exports.createMessage = async (req, res) => {
                         { user: sender },
                         { user: recipient, new: 1 },
                       ],
-                      newMessage: [
-                        { user: sender },
-                        { user: recipient, new: 1 },
-                      ],
                     },
                   }
                 )
                 .then(
                   async () => {
+                    let newMessageIncrement;
+                    if (category === "main")
+                      newMessageIncrement = { newMainMessage: 1 };
+                    else newMessageIncrement = { newSecondMessage: 1 };
                     await UserModel.updateOne(
                       { _id: recipient },
-                      { $inc: { messageNotSeen: 1 } }
+                      { $inc: newMessageIncrement }
                     ).then(
                       () =>
                         res
@@ -103,16 +106,15 @@ module.exports.createMessage = async (req, res) => {
                   else return user;
                 }
               );
-              conversation.newMessage = conversation.newMessage.map((user) => {
-                if (user.user == recipient)
-                  return { ...user, new: user.new + 1 };
-                else return user;
-              });
               conversation.save().then(
                 async () => {
+                  let newMessageIncrement;
+                  if (category === "main")
+                    newMessageIncrement = { newMainMessage: 1 };
+                  else newMessageIncrement = { newSecondMessage: 1 };
                   await UserModel.updateOne(
                     { _id: recipient },
-                    { $inc: { messageNotSeen: 1 } }
+                    { $inc: newMessageIncrement }
                   ).then(
                     () =>
                       res

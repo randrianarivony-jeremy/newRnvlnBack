@@ -105,7 +105,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    newMessage: {
+    newMainMessage: {
+      type: Number,
+      default: 0,
+    },
+    newSecondMessage: {
       type: Number,
       default: 0,
     },

@@ -1,4 +1,5 @@
 const conversationModel = require("../Models/conversation.model");
+const UserModel = require("../Models/user.model");
 
 module.exports.fetchConversationByUserId = async (req, res) => {
   const conversation = await conversationModel.findOne(
@@ -11,9 +12,22 @@ module.exports.fetchConversationByUserId = async (req, res) => {
 };
 
 module.exports.fetchMainConversation = async (req, res) => {
+  const currentUser = await UserModel.findById(
+    req.id,
+    "friends subscriptions subscribers"
+  );
   conversationModel
     .find({
-      $and: [{ members: { $in: [req.id] } }, { category: "main" }],
+      $and: [
+        { members: { $in: [req.id] } },
+        {
+          $or: [
+            { members: { $in: currentUser.friends } },
+            { members: { $in: currentUser.subscribers } },
+            { members: { $in: currentUser.subscriptions } },
+          ],
+        },
+      ],
     })
     .sort({ updatedAt: -1 })
     // .limit(15)
@@ -25,21 +39,11 @@ module.exports.fetchMainConversation = async (req, res) => {
     })
     .then(
       (conversations) => {
-        conversations.map((conv) => {
-          conv.newMessage = conv.newMessage.map((elt) => {
-            if (String(elt.user) == String(req.id)) return { ...elt, new: 0 };
-            else return elt;
-          });
-          conv.save();
-        });
         res.status(200).json(conversations);
       },
       (err) => {
         console.log(
-          "friend conversations not found for user" +
-            req.locals.user._id +
-            "---" +
-            err
+          "friend conversations not found for user" + req.id + "---" + err
         );
         res.status(500).send("friend conversation not found");
       }
@@ -47,9 +51,18 @@ module.exports.fetchMainConversation = async (req, res) => {
 };
 
 module.exports.fetchSecondConversation = async (req, res) => {
+  const currentUser = await UserModel.findById(
+    req.id,
+    "friends subscriptions subscribers"
+  );
   conversationModel
     .find({
-      $and: [{ members: { $in: [req.id] } }, { category: "second" }],
+      $and: [
+        { members: { $in: [req.id] } },
+        { members: { $nin: currentUser.friends } },
+        { members: { $nin: currentUser.subscribers } },
+        { members: { $nin: currentUser.subscriptions } },
+      ],
     })
     .sort({ updatedAt: -1 })
     // .limit(15)
@@ -61,13 +74,6 @@ module.exports.fetchSecondConversation = async (req, res) => {
     })
     .then(
       (conversations) => {
-        conversations.map((conv) => {
-          conv.newMessage = conv.newMessage.map((elt) => {
-            if (String(elt.user) == String(req.id)) return { ...elt, new: 0 };
-            else return elt;
-          });
-          conv.save();
-        });
         res.status(200).json(conversations);
       },
       (err) => {
@@ -109,4 +115,14 @@ module.exports.checkNewMessage = async (req, res) => {
         .send("conversation not found for new message number checking");
     }
   );
+};
+
+module.exports.updateNewMessage = (req, res) => {
+  let newMessageRestore;
+  if (req.params.category === "main") newMessageRestore = { newMainMessage: 0 };
+  else newMessageRestore = { newSecondMessage: 0 };
+  UserModel.findByIdAndUpdate(req.id, {
+    $set: newMessageRestore,
+  }).exec();
+  res.status(200).json({ message: "New message checked" });
 };
