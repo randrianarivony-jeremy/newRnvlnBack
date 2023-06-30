@@ -30,12 +30,19 @@ module.exports.fetchMainConversation = async (req, res) => {
         },
       ],
     })
+    .lean()
     .sort({ updatedAt: -1 })
-    // .limit(15)
+    // .limit(20)
     .populate("members", "name picture job")
     .populate("lastMessage")
     .then(
       (conversations) => {
+        conversations = conversations.map((conv) => {
+          conv.unseenMessage = conv.unseenMessage.filter(
+            (elt) => String(elt.user) === req.id
+          )[0].new;
+          return conv;
+        });
         res.status(200).json(conversations);
       },
       (err) => {
@@ -62,15 +69,18 @@ module.exports.fetchSecondConversation = async (req, res) => {
       ],
     })
     .sort({ updatedAt: -1 })
-    // .limit(15)
+    .lean()
+    // .limit(20)
     .populate("members", "name picture job")
-    .populate({
-      path: "messages",
-      perDocumentLimit: 1,
-      options: { sort: { createdAt: -1 } },
-    })
+    .populate("lastMessage")
     .then(
       (conversations) => {
+        conversations = conversations.map((conv) => {
+          conv.unseenMessage = conv.unseenMessage.filter(
+            (elt) => String(elt.user) === req.id
+          )[0].new;
+          return conv;
+        });
         res.status(200).json(conversations);
       },
       (err) => {
@@ -129,7 +139,7 @@ module.exports.updateUnseenMessage = (req, res) => {
     .findByIdAndUpdate(
       req.params.conversationId,
       {
-        $set: { "unseenMessage.$[element].new": 0 },
+        $set: { "unseenMessage.$[element].new": [] },
       },
       {
         arrayFilters: [{ "element.user": new mongoose.Types.ObjectId(req.id) }],
