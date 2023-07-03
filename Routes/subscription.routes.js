@@ -6,9 +6,9 @@ const {
   unsubscribe,
 } = require("../Controllers/subscription.controller");
 
-router.get("/subscribers", fetchUserSubscribers);
-router.get("/subscriptions", fetchUserSubscriptions);
+router.get("/subscribers/:id", fetchUserSubscribers);
+router.get("/subscriptions/:id", fetchUserSubscriptions);
 router.post("/subscribe", subscribe);
-router.delete("/unsubscribe", unsubscribe);
+router.put("/unsubscribe", unsubscribe);
 
 module.exports = router;

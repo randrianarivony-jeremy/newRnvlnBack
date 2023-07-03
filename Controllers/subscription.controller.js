@@ -4,20 +4,44 @@ const UserModel = require("../Models/user.model");
 const bcrypt = require("bcrypt");
 
 // @desc fetchUserSubscriptions
-// @route GET /subscri/subscriptions
+// @route GET /subscri/subscriptions?details=Boolean
 // @access Authenticated
 module.exports.fetchUserSubscriptions = async (req, res) => {
-  const subscriptions = await subscriptionModel.find({ userId: req.id }).lean();
+  let subscriptions;
+  if (req.query.details==='true'){
+    subscriptions = 
+    await subscriptionModel
+    .find({ userId: req.params.id },'subscribedTo')
+    .populate('subscribedTo','name job picture')
+    .lean()  
+    subscriptions = subscriptions.map(elt=>elt.subscribedTo)
+  } else {
+subscriptions=
+    await subscriptionModel
+    .find({ userId: req.params.id },'_id')
+    .lean() ;
+  }
   res.status(200).json(subscriptions);
 };
 
 // @desc fetchUserSubscribers
-// @route GET /subscri/subscribers
+// @route GET /subscri/subscribers?details=Boolean
 // @access Authenticated
 module.exports.fetchUserSubscribers = async (req, res) => {
-  const subscribers = await subscriptionModel
-    .find({ subscribedTo: req.id })
-    .lean();
+  let subscribers;
+  if (req.query.details==='true'){
+    subscribers = 
+    await subscriptionModel
+    .find({ subscribedTo: req.params.id },'userId')
+    .populate('userId','name job picture')
+    .lean()  
+    subscribers = subscribers.map(elt=>elt.userId)
+  } else {
+subscribers=
+    await subscriptionModel
+    .find({ subscribedTo: req.params.id },'_id')
+    .lean() ;
+  }
   res.status(200).json(subscribers);
 };
 
@@ -111,7 +135,7 @@ module.exports.subscribe = async (req, res) => {
 };
 
 // @desc unsubscribe
-// @route DELETE /subscri/unsubscribe
+// @route PUT /subscri/unsubscribe
 // @access Authenticated
 module.exports.unsubscribe = async (req, res) => {
   await UserModel.findById(req.id, "password").then(async (unsubscriber) => {
