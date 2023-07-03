@@ -2,6 +2,7 @@ const interviewModel = require("../Models/interview.model");
 const questionModel = require("../Models/question.model");
 const notificationModel = require("../Models/notification.model");
 const UserModel = require("../Models/user.model");
+const subscriptionModel = require("../Models/subscription.model");
 
 //CREATE
 module.exports.createInterview = async (req, res) => {
@@ -56,7 +57,11 @@ module.exports.createInterview = async (req, res) => {
 
 //READ
 module.exports.readInterview = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   try {
     const result = await interviewModel
       .findOne({
@@ -67,11 +72,12 @@ module.exports.readInterview = async (req, res) => {
               { public: true },
               { id_user: currentUser.friends },
               { id_user: currentUser._id },
-              { id_user: currentUser.subscriptions },
+              { id_user: subscriptions },
             ],
           },
         ],
       })
+      .lean()
       .populate("id_user", "name picture job")
       .populate({
         path: "question",
@@ -85,7 +91,11 @@ module.exports.readInterview = async (req, res) => {
 
 //READ ALL
 module.exports.readQuestionInterviews = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   try {
     const result = await interviewModel
       .find({
@@ -96,7 +106,7 @@ module.exports.readQuestionInterviews = async (req, res) => {
               { public: true },
               { id_user: currentUser.friends },
               { id_user: currentUser._id },
-              { id_user: currentUser.subscriptions },
+              { id_user: subscriptions },
             ],
           },
         ],
@@ -106,6 +116,7 @@ module.exports.readQuestionInterviews = async (req, res) => {
         path: "question",
         populate: { path: "interviewer", select: "name picture job" },
       })
+      .lean()
       .sort({ $natural: -1 });
     res.status(200).json(result);
   } catch (error) {
@@ -115,7 +126,11 @@ module.exports.readQuestionInterviews = async (req, res) => {
 
 //READ USER INTERVIEWS
 module.exports.readUserInterviews = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   try {
     const result = await interviewModel
       .find({ id_user: req.params.id })
@@ -126,11 +141,12 @@ module.exports.readUserInterviews = async (req, res) => {
             $or: [
               { public: true },
               { id_user: currentUser.friends },
-              { id_user: currentUser.subscriptions },
+              { id_user: subscriptions },
             ],
           },
         ],
       })
+      .lean()
       .select("id_user data type createdAt");
     res.status(200).json(result);
   } catch (error) {
@@ -491,8 +507,12 @@ module.exports.deleteCommentpost = async (req, res) => {
 
 // S E A R C H
 module.exports.searchInterviews = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id,'friends subscriptions');
-  interviewModel
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
+  const result = await interviewModel
     .find({
       $and: [
         {
@@ -506,13 +526,11 @@ module.exports.searchInterviews = async (req, res) => {
             { public: true },
             { id_user: currentUser.friends },
             { id_user: req.id },
-            { id_user: currentUser.subscriptions },
+            { id_user: subscriptions },
           ],
         },
       ],
     })
-    .then((result) => res.status(200).json(result))
-    .catch((err) =>
-      res.status(500).send("Error while querying interview :" + err)
-    );
+    .lean();
+  res.status(200).json(result);
 };

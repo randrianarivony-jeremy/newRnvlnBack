@@ -9,9 +9,10 @@ require("./config/db.js");
 const errorHandler = require("./middleware/errorHandler");
 const connectDB = require("./config/db.js");
 
-const userRoutes = require("./Routes/user.routes");
-const authRoutes = require("./Routes/authentication.routes");
 const { verifyJWT, checkUser } = require("./middleware/auth.middleware");
+const userRoutes = require("./Routes/user.routes");
+const subscriptionRoutes = require("./Routes/subscription.routes");
+const authRoutes = require("./Routes/authentication.routes");
 const questionRoutes = require("./Routes/question.routes");
 const publicationRoutes = require("./Routes/publication.routes");
 const interviewRoutes = require("./Routes/interview.routes");
@@ -42,6 +43,7 @@ app.get("/api/check_user", checkUser);
 // //routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", verifyJWT, userRoutes);
+app.use("/api/subscri", verifyJWT, subscriptionRoutes);
 app.use("/api/question", verifyJWT, questionRoutes);
 app.use("/api/publication", verifyJWT, publicationRoutes);
 app.use("/api/interview", verifyJWT, interviewRoutes);

@@ -1,21 +1,27 @@
 const { default: mongoose } = require("mongoose");
 const conversationModel = require("../Models/conversation.model");
 const messageModel = require("../Models/message.model");
-const { findByIdAndUpdate } = require("../Models/user.model");
+const subscriptionModel = require("../Models/subscription.model");
 const UserModel = require("../Models/user.model");
 
 //create conversation and message
 module.exports.createMessage = async (req, res) => {
-  const currentUser = await UserModel.findById(
-    req.id,
-    "friends subscribers subscriptions"
-  );
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
+  let subscribers = await subscriptionModel
+    .find({ subscribedTo: req.id }, "userId")
+    .lean();
+  subscribers = subscribers.map((elt) => elt.userId);
+
   let { sender, recipient, content, contentType, conversationId } = req.body;
   let category = "second"; //matter of real time notification ui
   if (
     currentUser.friends.includes(recipient) ||
-    currentUser.subscribers.includes(recipient) ||
-    currentUser.subscriptions.includes(recipient)
+    subscribers.includes(recipient) ||
+    subscriptions.includes(recipient)
   )
     category = "main";
 

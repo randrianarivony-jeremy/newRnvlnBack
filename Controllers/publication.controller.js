@@ -1,6 +1,7 @@
 const publicationModel = require("../Models/publication.model");
 const notificationModel = require("../Models/notification.model");
 const UserModel = require("../Models/user.model");
+const subscriptionModel = require("../Models/subscription.model");
 
 //CREATE
 module.exports.createPublication = async (req, res) => {
@@ -20,7 +21,11 @@ module.exports.createPublication = async (req, res) => {
 
 //READ
 module.exports.readPublication = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   try {
     const result = await publicationModel
       .findOne({
@@ -31,11 +36,12 @@ module.exports.readPublication = async (req, res) => {
               { public: true },
               { id_user: currentUser.friends },
               { id_user: currentUser._id },
-              { id_user: currentUser.subscriptions },
+              { id_user: subscriptions },
             ],
           },
         ],
       })
+      .lean()
       .populate("id_user", "name picture job");
     res.status(200).json(result);
   } catch (error) {
@@ -45,7 +51,11 @@ module.exports.readPublication = async (req, res) => {
 
 //READ USER PUBLICATIONS
 module.exports.readUserPublications = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   try {
     const result = await publicationModel
       .find({
@@ -55,11 +65,12 @@ module.exports.readUserPublications = async (req, res) => {
             $or: [
               { public: true },
               { id_user: currentUser.friends },
-              { id_user: currentUser.subscriptions },
+              { id_user: subscriptions },
             ],
           },
         ],
       })
+      .lean()
       .select("id_user data type createdAt");
     res.status(200).json(result);
   } catch (error) {
@@ -69,16 +80,21 @@ module.exports.readUserPublications = async (req, res) => {
 
 //READ ALL
 module.exports.fetchPublications = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   const result = await publicationModel
     .find({
       $or: [
         { public: true },
         { id_user: currentUser.friends },
         { id_user: req.id },
-        { id_user: currentUser.subscriptions },
+        { id_user: subscriptions },
       ],
     })
+    .lean()
     .populate("id_user", "name picture job");
   res.status(200).json(result);
 };
@@ -410,7 +426,11 @@ module.exports.deleteCommentpost = async (req, res) => {
 
 // S E A R C H
 module.exports.searchPublications = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "friends subscriptions");
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   publicationModel
     .find({
       $and: [
@@ -425,11 +445,12 @@ module.exports.searchPublications = async (req, res) => {
             { public: true },
             { id_user: currentUser.friends },
             { id_user: req.id },
-            { id_user: currentUser.subscriptions },
+            { id_user: subscriptions },
           ],
         },
       ],
     })
+    .lean()
     .then((result) => res.status(200).json(result))
     .catch((err) =>
       res.status(500).send("Error while querying publication :" + err)

@@ -2,9 +2,14 @@ const publicationModel = require("../Models/publication.model");
 const interviewModel = require("../Models/interview.model");
 const questionModel = require("../Models/question.model");
 const UserModel = require("../Models/user.model");
+const subscriptionModel = require("../Models/subscription.model");
 
 module.exports.fetchHomeFeeds = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   const date = Date.now();
   let nbOfDay = 86400000;
   let result = [];
@@ -24,11 +29,12 @@ module.exports.fetchHomeFeeds = async (req, res) => {
                 { public: true },
                 { id_user: currentUser.friends },
                 { id_user: currentUser._id },
-                { id_user: currentUser.subscriptions },
+                { id_user: subscriptions },
               ],
             },
           ],
         })
+        .lean()
         // .sort({ $natural: -1 })
         .populate("id_user", "name picture job"),
       interviewModel
@@ -45,11 +51,12 @@ module.exports.fetchHomeFeeds = async (req, res) => {
                 { public: true },
                 { id_user: currentUser.friends },
                 { id_user: currentUser._id },
-                { id_user: currentUser.subscriptions },
+                { id_user: subscriptions },
               ],
             },
           ],
         })
+        .lean()
         // .sort({ $natural: -1 })
         .populate("id_user", "name picture job")
         .populate({
@@ -66,6 +73,7 @@ module.exports.fetchHomeFeeds = async (req, res) => {
           },
           "-interviewNotification"
         )
+        .lean()
         // .sort({ $natural: -1 })
         .populate("interviewer", "name picture job"),
     ]);
@@ -76,7 +84,11 @@ module.exports.fetchHomeFeeds = async (req, res) => {
 };
 
 module.exports.fetchMoreHomeFeeds = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id);
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
   const date = req.params.date;
   let nbOfDay = 86400000;
   let result = [];
@@ -97,11 +109,12 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
                 { public: true },
                 { id_user: currentUser.friends },
                 { id_user: currentUser._id },
-                { id_user: currentUser.subscriptions },
+                { id_user: subscriptions },
               ],
             },
           ],
         })
+        .lean()
         .sort({ $natural: -1 })
         .populate("id_user", "name picture job"),
       interviewModel
@@ -118,11 +131,12 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
                 { public: true },
                 { id_user: currentUser.friends },
                 { id_user: currentUser._id },
-                { id_user: currentUser.subscriptions },
+                { id_user: subscriptions },
               ],
             },
           ],
         })
+        .lean()
         .sort({ $natural: -1 })
         .populate("id_user", "name picture job")
         .populate({
@@ -139,6 +153,7 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
           },
           "-interviewNotification"
         )
+        .lean()
         // .sort({ $natural: -1 })
         .populate("interviewer", "name picture job"),
     ]);

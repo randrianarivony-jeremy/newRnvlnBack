@@ -20,7 +20,7 @@ module.exports.signUp = async (req, res) => {
     job,
     address,
     picture,
-  }).select("-password");
+  });
   const accessToken = jwt.sign(
     {
       UserInfo: {

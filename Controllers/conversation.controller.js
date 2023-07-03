@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const conversationModel = require("../Models/conversation.model");
+const subscriptionModel = require("../Models/subscription.model");
 const UserModel = require("../Models/user.model");
 
 module.exports.fetchConversationByUserId = async (req, res) => {
@@ -13,10 +14,15 @@ module.exports.fetchConversationByUserId = async (req, res) => {
 };
 
 module.exports.fetchMainConversation = async (req, res) => {
-  const currentUser = await UserModel.findById(
-    req.id,
-    "friends subscriptions subscribers"
-  );
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
+  let subscribers = await subscriptionModel
+    .find({ subscribedTo: req.id }, "userId")
+    .lean();
+  subscribers = subscribers.map((elt) => elt.userId);
   conversationModel
     .find({
       $and: [
@@ -24,8 +30,8 @@ module.exports.fetchMainConversation = async (req, res) => {
         {
           $or: [
             { members: { $in: currentUser.friends } },
-            { members: { $in: currentUser.subscribers } },
-            { members: { $in: currentUser.subscriptions } },
+            { members: { $in: subscribers } },
+            { members: { $in: subscriptions } },
           ],
         },
       ],
@@ -55,17 +61,22 @@ module.exports.fetchMainConversation = async (req, res) => {
 };
 
 module.exports.fetchSecondConversation = async (req, res) => {
-  const currentUser = await UserModel.findById(
-    req.id,
-    "friends subscriptions subscribers"
-  );
+  const currentUser = await UserModel.findById(req.id, "friends");
+  let subscriptions = await subscriptionModel
+    .find({ userId: req.id }, "subscribedTo")
+    .lean();
+  subscriptions = subscriptions.map((elt) => elt.subscribedTo);
+  let subscribers = await subscriptionModel
+    .find({ subscribedTo: req.id }, "userId")
+    .lean();
+  subscribers = subscribers.map((elt) => elt.userId);
   conversationModel
     .find({
       $and: [
         { members: { $in: [req.id] } },
         { members: { $nin: currentUser.friends } },
-        { members: { $nin: currentUser.subscribers } },
-        { members: { $nin: currentUser.subscriptions } },
+        { members: { $nin: subscribers } },
+        { members: { $nin: subscriptions } },
       ],
     })
     .sort({ updatedAt: -1 })

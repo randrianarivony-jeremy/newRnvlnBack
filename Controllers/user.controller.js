@@ -2,10 +2,11 @@ const UserModel = require("../Models/user.model");
 const ObjectId = require("mongoose").Types.ObjectId;
 const bcrypt = require("bcrypt");
 const notificationModel = require("../Models/notification.model");
+const subscriptionModel = require("../Models/subscription.model");
 
 // R E A D  A L L
 module.exports.getAllUsers = async (req, res) => {
-  const users = await UserModel.find().select("-password");
+  const users = await UserModel.find().select("-password").lean();
   res.status(200).json(users);
 };
 
@@ -15,6 +16,7 @@ module.exports.userInfo = (req, res) => {
     .select(
       "-password -wallet -savings -notificationSeen -messageNotSeen -createdAt -updatedAt -email"
     )
+    .lean()
     .then(
       (doc) => res.status(200).send(doc),
       (err) => {
@@ -27,7 +29,8 @@ module.exports.userInfo = (req, res) => {
 // R E A D  U S E R  S P E C I F I C A L L Y
 module.exports.getBasicUserInfo = (req, res) => {
   UserModel.findById(req.params.id)
-    .select('name picture job')
+    .select("name picture job")
+    .lean()
     .then(
       (doc) => res.status(200).send(doc),
       (err) => {
@@ -41,6 +44,7 @@ module.exports.getBasicUserInfo = (req, res) => {
 module.exports.currentUser = (req, res) => {
   UserModel.findById(req.params.id)
     .select("-password -createdAt -updatedAt")
+    .lean()
     .then(
       (doc) => res.status(200).send(doc),
       (err) => {
@@ -192,11 +196,9 @@ module.exports.pullFromFriends = async (req, res) => {
       ),
     ])
       .then(() =>
-        res
-          .status(200)
-          .json({
-            message: `pulling ${req.body.to} from friends done successfully`,
-          })
+        res.status(200).json({
+          message: `pulling ${req.body.to} from friends done successfully`,
+        })
       )
       .catch((err) => {
         res.send(err);
@@ -248,11 +250,15 @@ module.exports.cancelInvitation = async (req, res) => {
 };
 
 module.exports.subscribe = async (req, res) => {
+  const sub = await subscriptionModel.create({
+    userId: req.id,
+    subscribedTo: req.body.id_user,
+  });
   let subscriber = await UserModel.findById(
     req.id,
-    "password subscriptions wallet"
+    "password subscriptions wallet subscription"
   );
-  const auth = await bcrypt.compare(req.body.password, subscriber.password); //comparrer le name avec le base bcrypt
+  const auth = await bcrypt.compare(req.body.password, subscriber.password);
   if (auth) {
     await UserModel.findById(
       req.body.id_user,
@@ -264,6 +270,7 @@ module.exports.subscribe = async (req, res) => {
         else {
           subscriber.wallet -= subscribed.fees;
           subscriber.subscriptions.push(subscribed._id);
+          subscriber.subscription.push(sub._id);
           await subscriber.save().then(
             () => {
               subscribed.wallet += subscribed.fees;
@@ -422,6 +429,7 @@ module.exports.unsubscribe = async (req, res) => {
 module.exports.fetchFriends = (req, res) => {
   UserModel.findById(req.params.id)
     .select("friends")
+    .lean()
     .populate("friends", "picture name job")
     .then(
       (doc) => res.status(200).send(doc.friends),
@@ -435,6 +443,7 @@ module.exports.fetchFriends = (req, res) => {
 module.exports.fetchFriendRequests = (req, res) => {
   UserModel.findById(req.params.id)
     .select("friendRequest")
+    .lean()
     .populate("friendRequest", "picture name job")
     .then(
       (doc) => res.status(200).send(doc.friendRequest),
@@ -631,7 +640,6 @@ module.exports.deleteUser = (req, res) => {
 
 // S E A R C H
 module.exports.searchUser = async (req, res) => {
-  const currentUser = await UserModel.findById(req.id, "name");
   UserModel.find(
     {
       $and: [
@@ -643,6 +651,7 @@ module.exports.searchUser = async (req, res) => {
     },
     "name picture job"
   )
+    .lean()
     .then((result) => res.status(200).json(result))
     .catch((err) => res.status(500).send("Error while querying user :" + err));
 };

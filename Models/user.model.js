@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
 
-//req.body:status:currency:sex:birth:experience:email:password
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -41,25 +39,13 @@ const userSchema = new mongoose.Schema(
     },
     fees: {
       type: Number,
-      default: undefined,
+      default: 10,
     },
     subscriptionNotification: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "notification",
       default: null,
     },
-    subscribers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
-      },
-    ],
-    subscriptions: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
-      },
-    ],
 
     //demande d'ami
     friendRequestNotification: {
