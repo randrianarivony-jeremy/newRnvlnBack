@@ -14,7 +14,7 @@ const subscriptionSchema = new mongoose.Schema(
     },
     createdAt: {
       type: Date,
-      expires: 600,
+      expires: 2628288,
     },
   },
   { timestamps: true }

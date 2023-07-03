@@ -18,23 +18,17 @@ const userSchema = new mongoose.Schema(
     picture: {
       type: String,
     },
-    philosophy: {
-      type: String,
-      maxLength: 200,
-    },
+    philosophy: String,
     project: {
       type: String,
-      max: 200,
       default: "",
     },
     job: {
       type: String,
-      max: 30,
       default: "",
     },
     address: {
       type: String,
-      max: 30,
       default: "",
     },
     fees: {
@@ -85,7 +79,7 @@ const userSchema = new mongoose.Schema(
     ],
     wallet: {
       type: Number,
-      default: 0,
+      default: 200,
     },
     newNotification: {
       type: Number,

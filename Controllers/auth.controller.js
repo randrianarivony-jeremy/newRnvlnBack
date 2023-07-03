@@ -29,19 +29,19 @@ module.exports.signUp = async (req, res) => {
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "10s" }
+    { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
     { id: user._id },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "20m" }
+    { expiresIn: "30d" }
   );
   res.cookie("plusvaloo_jwt", refreshToken, {
     httpOnly: true, //accessible only by web server
     secure: true, //https
     sameSite: "None", //cross-site cookie
-    maxAge: 20 * 60 * 1000, //cookie expiry: set to match rT
+    maxAge: 2628288 * 1000, //cookie expiry: set to match rT
   });
 
   // Send accessToken containing email and name
@@ -76,13 +76,13 @@ module.exports.signIn = async (req, res) => {
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "10m" }
+    { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
     { id: foundUser._id },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "20m" }
+    { expiresIn: "30d" }
   );
 
   // Create secure cookie with refresh token
@@ -90,7 +90,7 @@ module.exports.signIn = async (req, res) => {
     httpOnly: true, //accessible only by web server
     secure: true, //https
     sameSite: "None", //cross-site cookie
-    maxAge: 20 * 60 * 1000, //cookie expiry: set to match rT
+    maxAge: 2628288 * 1000, //cookie expiry: set to match rT
   });
 
   // Send accessToken containing email and name
@@ -125,7 +125,7 @@ module.exports.refreshToken = (req, res) => {
           },
         },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: "10m" }
+        { expiresIn: "15m" }
       );
 
       res.json({ accessToken });

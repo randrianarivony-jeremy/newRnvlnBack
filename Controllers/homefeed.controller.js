@@ -92,7 +92,8 @@ module.exports.fetchMoreHomeFeeds = async (req, res) => {
   const date = req.params.date;
   let nbOfDay = 86400000;
   let result = [];
-  if (req.params.date === "1682403033246") return res.status(204).json(result);
+  if (req.params.date === process.env.OLDEST_CONTENT)
+    return res.status(204).json(result);
   while (result.length === 0) {
     const data = await Promise.all([
       publicationModel
