@@ -134,6 +134,14 @@ module.exports.refreshToken = (req, res) => {
 };
 
 module.exports.logout = (req, res) => {
-  res.cookie("plusvaloo_jwt", "", { maxAge: 1 });
-  res.status(200).json({ message: "Cookie removed" });
+  // res.cookie("plusvaloo_jwt", "", { maxAge: 1 });
+  // res.status(200).json({ message: "Cookie removed" });
+  const cookies = req.cookies;
+  if (!cookies?.plusvaloo_jwt) return res.sendStatus(204); //No content
+  res.clearCookie("plusvaloo_jwt", {
+    httpOnly: true,
+    sameSite: "None",
+    secure: true,
+  });
+  res.json({ message: "Cookie cleared" });
 };
