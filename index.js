@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const path = require('path')
 const cookieParser = require("cookie-parser");
 
 require("dotenv").config({ path: "./config/.env" });
@@ -23,6 +24,7 @@ const homefeedRoutes = require("./Routes/homefeeds.routes");
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "../ui/build")));
 
 connectDB();
 
@@ -51,8 +53,8 @@ app.use("/api/message", verifyJWT, messageRoutes);
 app.use("/api/conversation", verifyJWT, conversationRoutes);
 app.use("/api/notification", verifyJWT, notifRoutes);
 app.use("/api/feeds", verifyJWT, homefeedRoutes);
-app.all("*", (req, res) => {
-  res.status(404).json({ message: "404 Not Found" });
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, "../ui/build/index.html"));
 });
 
 app.use(errorHandler);

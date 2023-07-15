@@ -1,7 +1,7 @@
 const notificationModel = require("../Models/notification.model");
 const subscriptionModel = require("../Models/subscription.model");
 const UserModel = require("../Models/user.model");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 // @desc fetchUserSubscriptions
 // @route GET /subscri/subscriptions?details=Boolean
